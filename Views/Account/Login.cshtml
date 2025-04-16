@@ -1,0 +1,31 @@
+﻿@model ApartmentManagement.Models.User
+
+<div class="container mt-5" style="max-width: 400px;">
+    <h2 class="text-center mb-4">Đăng nhập</h2>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            @Html.ValidationSummary()
+        </div>
+    }
+
+    <form method="post" class="border p-4 rounded shadow-sm bg-light">
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input name="email" type="email" class="form-control" placeholder="Nhập email của bạn" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Mật khẩu</label>
+            <input name="password" type="password" class="form-control" placeholder="Nhập mật khẩu" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+    </form>
+
+    <div class="text-center mt-3">
+        <span>Bạn chưa có tài khoản?</span>
+        <a asp-controller="Account" asp-action="Register" class="text-decoration-none">Đăng ký ngay</a>
+    </div>
+</div>
