@@ -1,0 +1,22 @@
+﻿@model List<ApartmentManagement.Models.Room>
+
+<h2>Danh sách phòng đang trống</h2>
+<table>
+    <tr>
+        <td>Tên phòng</td>
+        <td>Địa chỉ</td>
+        <td>Diện tích</td>
+        <td>Loại phòng</td>
+        <td>Giá</td>
+    </tr>
+    @foreach (var room in Model)
+    {
+        <tr>
+            <td>@room.RoomName</td>
+            <td>@room.Address</td>
+            <td>@room.Area m²</td>
+            <td>@room.RoomMember</td>
+            <td>@room.Price VND</td>
+        </tr>
+    }
+</table>
