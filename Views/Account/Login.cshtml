@@ -21,10 +21,20 @@
             <input name="password" type="password" class="form-control" placeholder="Nhập mật khẩu" required />
         </div>
 
+        <div class="form-check mb-3">
+            <input type="checkbox" name="rememberMe" class="form-check-input" id="rememberMe" />
+            <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
+        </div>
+
         <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
     </form>
 
     <div class="text-center mt-3">
+        <span>Bạn quên mật khẩu?</span>
+        <a asp-controller="Account" asp-action="ForgetPass" class="text-decoration-none">Lấy lại mật khẩu</a>
+    </div>
+
+    <div class="text-center mt-2">
         <span>Bạn chưa có tài khoản?</span>
         <a asp-controller="Account" asp-action="Register" class="text-decoration-none">Đăng ký ngay</a>
     </div>

@@ -15,10 +15,12 @@ namespace ApartmentManagement.Controllers
     {
 
         private readonly IMongoCollection<User> _users;
+        private readonly CloudService _cloudService;
 
-        public AccountController(IMongoDBService mongoDBService)
+        public AccountController(IMongoDBService mongoDBService, CloudService cloudService)
         {
             _users = mongoDBService.GetCollection<User>("Users");
+            _cloudService = cloudService;
         }
         [HttpGet]
         public IActionResult Register() => View();
@@ -38,6 +40,7 @@ namespace ApartmentManagement.Controllers
             
             user.PasswordHash = HashPassword(user.PasswordHash);
             user.Role = "Tenant";
+            user.Avatar = "https://res.cloudinary.com/dpr5nrste/image/upload/v1744902717/ApartmentManagement/Avatar/AvatarDefualt.png";
             _users.InsertOne(user);
             return RedirectToAction("Login");
         }
@@ -45,7 +48,7 @@ namespace ApartmentManagement.Controllers
         [HttpGet]
         public IActionResult Login() => View();
         [HttpPost]
-        public async Task<IActionResult> Login(string email, string password)
+        public async Task<IActionResult> Login(string email, string password, bool rememberMe)
         {
             var user = _users.Find(u => u.Email == email).FirstOrDefault();
             if (user == null || user.PasswordHash != HashPassword(password))
@@ -61,11 +64,19 @@ namespace ApartmentManagement.Controllers
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
+
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = rememberMe,
+                ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(3) : DateTimeOffset.UtcNow.AddHours(1)
+            };
+
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
-            await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal);
+            await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal, authProperties);
 
             return RedirectToAction("Index", "Room");
         }
+
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync();

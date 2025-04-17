@@ -17,8 +17,15 @@ namespace ApartmentManagement
                 {
                     options.LoginPath = "/Account/Login";
                     options.AccessDeniedPath = "/Account/AccessDenied";
+
+                    options.ExpireTimeSpan = TimeSpan.FromDays(7); 
+                    options.SlidingExpiration = true;              
                 });
 
+
+            builder.Services.AddSingleton<CloudService>();
+
+            builder.Services.AddControllersWithViews();
 
 
             builder.Services.AddAuthorization();

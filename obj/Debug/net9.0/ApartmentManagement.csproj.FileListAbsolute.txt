@@ -104,3 +104,6 @@ C:\Code\ApartmentManagement\obj\Debug\net9.0\refint\ApartmentManagement.dll
 C:\Code\ApartmentManagement\obj\Debug\net9.0\ApartmentManagement.pdb
 C:\Code\ApartmentManagement\obj\Debug\net9.0\ApartmentManagement.genruntimeconfig.cache
 C:\Code\ApartmentManagement\obj\Debug\net9.0\ref\ApartmentManagement.dll
+C:\Code\ApartmentManagement\obj\Debug\net9.0\ApartmentManagement.sourcelink.json
+C:\Code\ApartmentManagement\bin\Debug\net9.0\CloudinaryDotNet.dll
+C:\Code\ApartmentManagement\bin\Debug\net9.0\Newtonsoft.Json.dll
