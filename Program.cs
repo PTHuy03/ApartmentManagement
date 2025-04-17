@@ -22,6 +22,7 @@ namespace ApartmentManagement
                     options.SlidingExpiration = true;              
                 });
 
+            builder.Services.AddScoped<EmailSender>();
 
             builder.Services.AddSingleton<CloudService>();
 

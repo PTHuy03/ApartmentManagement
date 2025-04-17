@@ -16,11 +16,13 @@ namespace ApartmentManagement.Controllers
 
         private readonly IMongoCollection<User> _users;
         private readonly CloudService _cloudService;
+        private readonly EmailSender _emailSender;
 
-        public AccountController(IMongoDBService mongoDBService, CloudService cloudService)
+        public AccountController(IMongoDBService mongoDBService, CloudService cloudService, EmailSender emailSender)
         {
             _users = mongoDBService.GetCollection<User>("Users");
             _cloudService = cloudService;
+            _emailSender = emailSender;
         }
         [HttpGet]
         public IActionResult Register() => View();
@@ -89,6 +91,35 @@ namespace ApartmentManagement.Controllers
             var bytes = Encoding.UTF8.GetBytes(password);
             var hash = sha256.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
+        }
+
+        [HttpGet]
+        public IActionResult ForgetPassword() => View();
+
+        [HttpPost]
+        public async Task<IActionResult> ForgetPassword(string email)
+        {
+            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "Email không tồn tại");
+                return View();
+            }
+
+            var newPassword = Guid.NewGuid().ToString("N").Substring(0, 8); // Tạo mật khẩu mới ngẫu nhiên
+            user.PasswordHash = HashPassword(newPassword);
+            _users.ReplaceOne(u => u.Id == user.Id, user);
+
+            // Gửi mật khẩu mới qua email
+            var subject = "Mật khẩu mới của bạn";
+            var body = $@"
+                <p>Chào <strong>{user.FullName}</strong>,</p>
+                <p>Mật khẩu mới của bạn là: <strong>{newPassword}</strong></p>
+                <p>Vui lòng đăng nhập và thay đổi mật khẩu ngay.</p>
+            ";
+
+            await _emailSender.SendEmailAsync(email, subject, body);
+            return RedirectToAction("Login");
         }
     }
 }
