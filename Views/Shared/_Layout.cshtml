@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using System.Security.Claims
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -15,7 +16,7 @@
             <div class="container-fluid">
                 <a class="navbar-brand" asp-controller="Room" asp-action="Index">ApartmentManagement</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
@@ -29,9 +30,23 @@
                     </ul>
                     @if (User.Identity.IsAuthenticated)
                     {
-                        <div class="d-flex">
-                            <span class="me-2 align-self-center text-dark">Xin chào, @User.Identity.Name</span>
-                            <a class="btn btn-outline-danger" asp-controller="Account" asp-action="Logout">Đăng xuất</a>
+                        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+                        var avatarUrl = User.FindFirst(ClaimTypes.UserData)?.Value ?? "";
+                        var email = User.FindFirst(ClaimTypes.Email)?.Value ?? "";
+
+                        <div class="dropdown me-4">
+                            <a class="d-flex align-items-center text-decoration-none dropdown-toggle" href="#" role="button" id="avatarDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <img src="@avatarUrl" alt="Avatar" class="rounded-circle" width="40" height="40" />
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
+                                <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile" asp-route-email="@email">Hồ sơ</a></li>
+                                @if (role == "Admin")
+                                {
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index">Trang quản trị</a></li>
+                                }
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item text-danger" asp-controller="Account" asp-action="Logout">Đăng xuất</a></li>
+                            </ul>
                         </div>
                     }
                     else
@@ -40,7 +55,6 @@
                             <a class="btn btn-outline-primary" asp-controller="Account" asp-action="Login">Đăng nhập</a>
                         </div>
                     }
-
                 </div>
             </div>
         </nav>
@@ -51,11 +65,12 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="footer text-center py-2 bg-light">
         <div class="container">
-            &copy; 2025 - ApartmentManagement - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <span class="text-muted">Hệ thống phòng trọ hiện đại - Tân tiến - Thông minh</span>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

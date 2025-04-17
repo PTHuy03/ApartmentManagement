@@ -24,6 +24,11 @@
                     <input asp-for="Email" class="form-control" type="email" placeholder="Nhập email của bạn" required />
                     <span asp-validation-for="Email" class="text-danger"></span>
                 </div>
+                <div class="mb-3">
+                    <label asp-for="PhoneNumber" class="form-label">Số điện thoại</label>
+                    <input asp-for="PhoneNumber" class="form-control" placeholder="Nhập số điện thoại của bạn" required />
+                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                </div>
 
                 <div class="mb-3">
                     <label asp-for="PasswordHash" class="form-label">Mật khẩu</label>

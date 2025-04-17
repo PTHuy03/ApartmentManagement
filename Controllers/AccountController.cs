@@ -60,9 +60,9 @@ namespace ApartmentManagement.Controllers
             }
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.FullName),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim(ClaimTypes.UserData, user.Avatar)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
@@ -121,5 +121,19 @@ namespace ApartmentManagement.Controllers
             await _emailSender.SendEmailAsync(email, subject, body);
             return RedirectToAction("Login");
         }
+
+        [HttpGet]
+        public IActionResult Profile(string email)
+        {
+            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            if(user == null) 
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return RedirectToAction("Index", "Room");
+            }
+
+            return View(user);
+        }
+
     }
 }
