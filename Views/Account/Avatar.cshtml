@@ -23,13 +23,13 @@
                     CÀI ĐẶT
                 </div>
                 <div class="card-body list-group ps-3">
-                    <a class="list-group-item list-group-item-action" asp-controller="Account" asp-action="Profile" asp-route-email="@Model.Email">
+                    <a class="list-group-item list-group-item-action" asp-controller="Account" asp-action="Profile" asp-route-id="@Model.Id">
                         <i class="bi bi-person-lines-fill me-2"></i>Hồ sơ
                     </a>
-                    <a class="list-group-item list-group-item-action active" asp-controller="Account" asp-action="Avatar" asp-route-email="@Model.Email">
+                    <a class="list-group-item list-group-item-action active" asp-controller="Account" asp-action="Avatar" asp-route-id="@Model.Id">
                         <i class="bi bi-camera-fill me-2"></i>Ảnh đại diện
                     </a>
-                    <a class="list-group-item list-group-item-action" asp-controller="Account" asp-action="Password" asp-route-email="@Model.Email">
+                    <a class="list-group-item list-group-item-action" asp-controller="Account" asp-action="Password" asp-route-id="@Model.Id">
                         <i class="bi bi-key-fill me-2"></i>Mật khẩu
                     </a>
                 </div>
@@ -43,7 +43,7 @@
                     CHỈNH SỬA ẢNH ĐẠI DIỆN CỦA BẠN
                 </div>
                 <div class="card-body">
-                    <form asp-controller="Account" asp-action="UploadAvatar" asp-route-email="@Model.Email" enctype="multipart/form-data" method="post">
+                    <form asp-controller="Account" asp-action="UploadAvatar" asp-route-id="@Model.Id" enctype="multipart/form-data" method="post">
                         <div class="row justify-content-center">
                             <!-- 2/10: Ảnh đại diện -->
                             <div class="col-lg-2 text-center mb-4 mb-lg-0">

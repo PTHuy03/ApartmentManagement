@@ -17,6 +17,7 @@ namespace ApartmentManagement.Controllers
         private readonly IMongoCollection<User> _users;
         private readonly CloudService _cloudService;
         private readonly EmailSender _emailSender;
+        private const string DefaultAvatarFileName = "https://res.cloudinary.com/dpr5nrste/image/upload/v1744902717/ApartmentManagement/Avatar/AvatarDefualt.png";
 
         public AccountController(IMongoDBService mongoDBService, CloudService cloudService, EmailSender emailSender)
         {
@@ -29,14 +30,13 @@ namespace ApartmentManagement.Controllers
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Sid, user.Id),
                 new Claim(ClaimTypes.Role, user.Role),
                 new Claim(ClaimTypes.UserData, user.Avatar)
             };
             var identity = new ClaimsIdentity(claims, authScheme);
             return new ClaimsPrincipal(identity);
         }
-
 
         [HttpGet]
         public IActionResult Register() => View();
@@ -129,9 +129,9 @@ namespace ApartmentManagement.Controllers
         }
 
         [HttpGet]
-        public IActionResult Profile(string email)
+        public IActionResult Profile(string id)
         {
-            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            var user = _users.Find(u => u.Id == id).FirstOrDefault();
             if(user == null) 
             {
                 TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
@@ -142,9 +142,9 @@ namespace ApartmentManagement.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Profile(string email, string fullName, string phoneNumber, string newEmail)
+        public async Task<IActionResult> Profile(string id, string fullName, string phoneNumber, string newEmail)
         {
-            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            var user = _users.Find(u => u.Id == id).FirstOrDefault();
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
@@ -175,9 +175,9 @@ namespace ApartmentManagement.Controllers
         }
 
         [HttpGet]
-        public IActionResult Avatar(string email)
+        public IActionResult Avatar(string id)
         {
-            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            var user = _users.Find(u => u.Id == id).FirstOrDefault();
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
@@ -188,18 +188,27 @@ namespace ApartmentManagement.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UploadAvatar(string email, IFormFile avatarFile)
+        public async Task<IActionResult> UploadAvatar(string id, IFormFile avatarFile)
         {
-            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            var user = _users.Find(u => u.Id == id).FirstOrDefault();
             if (user == null || avatarFile == null || avatarFile.Length == 0)
             {
                 TempData["ErrorMessage"] = "Tải ảnh thất bại.";
-                return RedirectToAction("Avatar", new { email });
+                return RedirectToAction("Avatar", new { id });
             }
 
             try
             {
                 var avatarUrl = await _cloudService.UploadAvatar(avatarFile);
+                if (!user.Avatar.Contains(DefaultAvatarFileName))
+                {
+                    var deleteOldAvatar = await _cloudService.DeleteAvatar(user.Avatar);
+                    if (deleteOldAvatar == false)
+                    {
+                        TempData["ErrorMessage"] = "Tải ảnh thất bại.";
+                        return RedirectToAction("Avatar", new { id });
+                    }
+                }
                 user.Avatar = avatarUrl;
 
                 var currentAuthResult = await HttpContext.AuthenticateAsync("MyCookieAuth");
@@ -224,14 +233,13 @@ namespace ApartmentManagement.Controllers
                 TempData["ErrorMessage"] = "Lỗi khi tải ảnh lên: " + ex.Message;
             }
 
-            return RedirectToAction("Profile", "Account", new { email });
+            return RedirectToAction("Profile", "Account", new { id });
         }
 
-
         [HttpGet]
-        public IActionResult Password(string email)
+        public IActionResult Password(string id)
         {
-            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            var user = _users.Find(u => u.Id == id).FirstOrDefault();
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
@@ -242,9 +250,9 @@ namespace ApartmentManagement.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Password(string email, string oldPassword, string newPassword, string confirmNewPassword)
+        public IActionResult Password(string id, string oldPassword, string newPassword, string confirmNewPassword)
         {
-            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            var user = _users.Find(u => u.Id == id).FirstOrDefault();
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
@@ -263,7 +271,7 @@ namespace ApartmentManagement.Controllers
             user.PasswordHash = HashPassword(newPassword);
             _users.ReplaceOne(u => u.Id == user.Id, user);
             TempData["SuccessMessage"] = "Đổi mật khẩu thành công";
-            return RedirectToAction("Profile", "Account", new { email = user.Email });
+            return RedirectToAction("Profile", "Account", new { id = user.Id });
         }
     }
 }
