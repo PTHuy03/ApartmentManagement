@@ -21,11 +21,11 @@ namespace ApartmentManagement.Services
 
         public async Task<string> UploadAvatar(IFormFile file)
         {
-            if (file.Length <= 0) return null;
             await using var stream = file.OpenReadStream();
+            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
             var uploadParams = new ImageUploadParams
             {
-                File = new FileDescription(file.FileName, stream),
+                File = new FileDescription(fileName, stream),
                 Folder = "ApartmentManagement/Avatar"
             };
 

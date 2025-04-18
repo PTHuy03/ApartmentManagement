@@ -40,12 +40,46 @@
         <div class="col-md-9">
             <div class="card">
                 <div class="card-header fw-bold">
-                    CHỈNH SỬA ẢNH ĐẠI DIỆN CỦA BẠN
+                    CHỈNH SỬA ẢNH ĐẠI DIỆN CỦA BẠN
                 </div>
-                <div class="row items-push">
-                    
+                <div class="card-body">
+                    <form asp-controller="Account" asp-action="UploadAvatar" asp-route-email="@Model.Email" enctype="multipart/form-data" method="post">
+                        <div class="row justify-content-center">
+                            <!-- 2/10: Ảnh đại diện -->
+                            <div class="col-lg-2 text-center mb-4 mb-lg-0">
+                                <img id="avatarPreview" src="@Model.Avatar" alt="Avatar" class="rounded-circle border" style="width: 100px; height: 100px; border: 3px solid #ccc;" />
+                            </div>
+
+                            <!-- 8/10: Khung chọn ảnh -->
+                            <div class="col-lg-8">
+                                <div class="border p-4 rounded bg-light text-center">
+                                    <p class="mb-1 fw-bold">Kéo ảnh vào đây</p>
+                                    <p class="text-muted mb-3">- hoặc -</p>
+                                    <input type="file" id="avatarFile" name="avatarFile" accept="image/*" class="form-control d-inline-block w-75 mx-auto" />
+                                </div>
+
+                                <div class="text-center mt-3">
+                                    <button type="submit" class="btn btn-primary">Đặt làm ảnh đại diện</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+@section Scripts {
+    <script>
+        document.getElementById("avatarFile").addEventListener("change", function (event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById("avatarPreview").src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+}

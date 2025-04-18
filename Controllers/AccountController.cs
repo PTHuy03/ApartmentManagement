@@ -24,6 +24,20 @@ namespace ApartmentManagement.Controllers
             _cloudService = cloudService;
             _emailSender = emailSender;
         }
+
+        private ClaimsPrincipal CreatePrincipal(User user, string authScheme = "MyCookieAuth")
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim(ClaimTypes.UserData, user.Avatar)
+            };
+            var identity = new ClaimsIdentity(claims, authScheme);
+            return new ClaimsPrincipal(identity);
+        }
+
+
         [HttpGet]
         public IActionResult Register() => View();
         [HttpPost]
@@ -58,14 +72,6 @@ namespace ApartmentManagement.Controllers
                 ModelState.AddModelError(string.Empty, "Sai thông tin đăng nhập");
                 return View();
             }
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role),
-                new Claim(ClaimTypes.UserData, user.Avatar)
-            };
-
-            var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
 
             var authProperties = new AuthenticationProperties
             {
@@ -73,7 +79,7 @@ namespace ApartmentManagement.Controllers
                 ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(3) : DateTimeOffset.UtcNow.AddHours(1)
             };
 
-            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+            var claimsPrincipal = CreatePrincipal(user);
             await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal, authProperties);
 
             return RedirectToAction("Index", "Room");
@@ -135,6 +141,39 @@ namespace ApartmentManagement.Controllers
             return View(user);
         }
 
+        [HttpPost]
+        public async Task<IActionResult> Profile(string email, string fullName, string phoneNumber, string newEmail)
+        {
+            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return RedirectToAction("Index", "Room");
+            }
+            user.FullName = fullName;
+            user.PhoneNumber = phoneNumber;
+            if(user.Email != newEmail)
+            {
+                user.Email = newEmail;
+                var currentAuthResult = await HttpContext.AuthenticateAsync("MyCookieAuth");
+                var isPersistent = currentAuthResult.Properties?.IsPersistent ?? false;
+                var expiresUtc = currentAuthResult.Properties?.ExpiresUtc ??
+                    (isPersistent ? DateTimeOffset.UtcNow.AddDays(3) : DateTimeOffset.UtcNow.AddHours(1));
+
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = isPersistent,
+                    ExpiresUtc = expiresUtc
+                };
+
+                var claimsPrincipal = CreatePrincipal(user);
+                await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal, authProperties);
+            }
+            _users.ReplaceOne(u => u.Id == user.Id, user);
+            TempData["SuccessMessage"] = "Cập nhật thành công";
+            return RedirectToAction("Profile", "Account", new { email = user.Email });
+        }
+
         [HttpGet]
         public IActionResult Avatar(string email)
         {
@@ -147,6 +186,47 @@ namespace ApartmentManagement.Controllers
 
             return View(user);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> UploadAvatar(string email, IFormFile avatarFile)
+        {
+            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            if (user == null || avatarFile == null || avatarFile.Length == 0)
+            {
+                TempData["ErrorMessage"] = "Tải ảnh thất bại.";
+                return RedirectToAction("Avatar", new { email });
+            }
+
+            try
+            {
+                var avatarUrl = await _cloudService.UploadAvatar(avatarFile);
+                user.Avatar = avatarUrl;
+
+                var currentAuthResult = await HttpContext.AuthenticateAsync("MyCookieAuth");
+                var isPersistent = currentAuthResult.Properties?.IsPersistent ?? false;
+                var expiresUtc = currentAuthResult.Properties?.ExpiresUtc ??
+                    (isPersistent ? DateTimeOffset.UtcNow.AddDays(3) : DateTimeOffset.UtcNow.AddHours(1));
+
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = isPersistent,
+                    ExpiresUtc = expiresUtc
+                };
+
+                var claimsPrincipal = CreatePrincipal(user);
+                await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal, authProperties);
+
+                _users.ReplaceOne(u => u.Id == user.Id, user);
+                TempData["SuccessMessage"] = "Cập nhật ảnh đại diện thành công.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi khi tải ảnh lên: " + ex.Message;
+            }
+
+            return RedirectToAction("Profile", "Account", new { email });
+        }
+
 
         [HttpGet]
         public IActionResult Password(string email)
@@ -162,7 +242,7 @@ namespace ApartmentManagement.Controllers
         }
 
         [HttpPost]
-        public IActionResult Password(string email, string oldPassword, string newPassword, string confirmNewPassword)
+        public async Task<IActionResult> Password(string email, string oldPassword, string newPassword, string confirmNewPassword)
         {
             var user = _users.Find(u => u.Email == email).FirstOrDefault();
             if (user == null)
