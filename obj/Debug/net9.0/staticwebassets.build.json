@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "CREtge4xcch7nYWt4tCyCSVc7k5haD0pirq7WktcPy8=",
+  "Hash": "847BwLtgdCfigIvJjQOtOMja2ToNZAKwv0XadezU56A=",
   "Source": "ApartmentManagement",
   "BasePath": "_content/ApartmentManagement",
   "Mode": "Default",
@@ -1443,6 +1443,27 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\favicon.ico"
+    },
+    {
+      "Identity": "C:\\Code\\ApartmentManagement\\wwwroot\\img\\cover.jpg",
+      "SourceId": "ApartmentManagement",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Code\\ApartmentManagement\\wwwroot\\",
+      "BasePath": "_content/ApartmentManagement",
+      "RelativePath": "img/cover#[.{fingerprint}]?.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "swytxnp1id",
+      "Integrity": "/KIUyGa1EOtjQPqzi3io3a0RY8eT07Asd970KDb1avQ=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\img\\cover.jpg"
     },
     {
       "Identity": "C:\\Code\\ApartmentManagement\\wwwroot\\js\\site.js",
@@ -3916,6 +3937,88 @@
         {
           "Name": "integrity",
           "Value": "sha256-jcY0RXFOlcp4VNTCcYQtWVZZBlr+ZY+AOv6/0S5dnF8="
+        }
+      ]
+    },
+    {
+      "Route": "img/cover.jpg",
+      "AssetFile": "C:\\Code\\ApartmentManagement\\wwwroot\\img\\cover.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "229621"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"/KIUyGa1EOtjQPqzi3io3a0RY8eT07Asd970KDb1avQ=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Fri, 18 Apr 2025 13:52:41 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-/KIUyGa1EOtjQPqzi3io3a0RY8eT07Asd970KDb1avQ="
+        }
+      ]
+    },
+    {
+      "Route": "img/cover.swytxnp1id.jpg",
+      "AssetFile": "C:\\Code\\ApartmentManagement\\wwwroot\\img\\cover.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "229621"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"/KIUyGa1EOtjQPqzi3io3a0RY8eT07Asd970KDb1avQ=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Fri, 18 Apr 2025 13:52:41 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "swytxnp1id"
+        },
+        {
+          "Name": "label",
+          "Value": "img/cover.jpg"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-/KIUyGa1EOtjQPqzi3io3a0RY8eT07Asd970KDb1avQ="
         }
       ]
     },

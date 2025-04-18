@@ -135,5 +135,55 @@ namespace ApartmentManagement.Controllers
             return View(user);
         }
 
+        [HttpGet]
+        public IActionResult Avatar(string email)
+        {
+            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return RedirectToAction("Index", "Room");
+            }
+
+            return View(user);
+        }
+
+        [HttpGet]
+        public IActionResult Password(string email)
+        {
+            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return RedirectToAction("Index", "Room");
+            }
+
+            return View(user);
+        }
+
+        [HttpPost]
+        public IActionResult Password(string email, string oldPassword, string newPassword, string confirmNewPassword)
+        {
+            var user = _users.Find(u => u.Email == email).FirstOrDefault();
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return RedirectToAction("Index", "Room");
+            }
+            if (user.PasswordHash != HashPassword(oldPassword))
+            {
+                ModelState.AddModelError("OldPassword", "Mật khẩu cũ không đúng");
+                return View(user);
+            }
+            if (newPassword != confirmNewPassword)
+            {
+                ModelState.AddModelError("ConfirmNewPassword", "Mật khẩu xác nhận không khớp");
+                return View(user);
+            }
+            user.PasswordHash = HashPassword(newPassword);
+            _users.ReplaceOne(u => u.Id == user.Id, user);
+            TempData["SuccessMessage"] = "Đổi mật khẩu thành công";
+            return RedirectToAction("Profile", "Account", new { email = user.Email });
+        }
     }
 }

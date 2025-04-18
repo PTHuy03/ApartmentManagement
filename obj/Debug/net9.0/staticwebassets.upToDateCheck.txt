@@ -62,6 +62,7 @@ C:\Code\ApartmentManagement\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.
 C:\Code\ApartmentManagement\wwwroot\lib\jquery\dist\jquery.slim.min.js
 wwwroot\css\site.css
 wwwroot\favicon.ico
+wwwroot\img\cover.jpg
 wwwroot\js\site.js
 wwwroot\lib\bootstrap\dist\css\bootstrap.css
 wwwroot\lib\bootstrap\dist\css\bootstrap.css.map

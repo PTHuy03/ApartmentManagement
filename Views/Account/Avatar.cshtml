@@ -1,0 +1,51 @@
+﻿@model ApartmentManagement.Models.User
+
+@{
+    Layout = "_Layout";  // Nếu bạn sử dụng layout chung
+}
+
+<div class="container mt-5">
+    <!-- Cover section -->
+    <div class="bg-dark text-white text-center py-5 position-relative" style="background-image: url('../img/cover.jpg'); background-size: cover; background-position: center; height: 250px;">
+        <div class="position-absolute start-0 bottom-0 ms-4 mb-4 d-flex align-items-center">
+            <img src="@Model.Avatar" alt="Avatar" class="rounded-circle border border-white" style="width: 100px; height: 100px;">
+            <h3 class="ms-3 fw-bold">@Model.FullName</h3>
+        </div>
+    </div>
+
+    <!-- Main section -->
+    <div class="row mt-4">
+        <!-- Sidebar -->
+
+        <div class="col-md-3 mb-3">
+            <div class="card">
+                <div class="card-header fw-bold">
+                    CÀI ĐẶT
+                </div>
+                <div class="card-body list-group ps-3">
+                    <a class="list-group-item list-group-item-action" asp-controller="Account" asp-action="Profile" asp-route-email="@Model.Email">
+                        <i class="bi bi-person-lines-fill me-2"></i>Hồ sơ
+                    </a>
+                    <a class="list-group-item list-group-item-action active" asp-controller="Account" asp-action="Avatar" asp-route-email="@Model.Email">
+                        <i class="bi bi-camera-fill me-2"></i>Ảnh đại diện
+                    </a>
+                    <a class="list-group-item list-group-item-action" asp-controller="Account" asp-action="Password" asp-route-email="@Model.Email">
+                        <i class="bi bi-key-fill me-2"></i>Mật khẩu
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile content -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header fw-bold">
+                    CHỈNH SỬA ẢNH ĐẠI DIỆN CỦA BẠN
+                </div>
+                <div class="row items-push">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

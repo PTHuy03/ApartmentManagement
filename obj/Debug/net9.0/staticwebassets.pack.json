@@ -13,6 +13,10 @@
       "PackagePath": "staticwebassets\\favicon.ico"
     },
     {
+      "Id": "C:\\Code\\ApartmentManagement\\wwwroot\\img\\cover.jpg",
+      "PackagePath": "staticwebassets\\img\\cover.jpg"
+    },
+    {
       "Id": "C:\\Code\\ApartmentManagement\\wwwroot\\js\\site.js",
       "PackagePath": "staticwebassets\\js\\site.js"
     },
