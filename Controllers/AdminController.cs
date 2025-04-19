@@ -16,6 +16,7 @@ namespace ApartmentManagement.Controllers
         private readonly IMongoCollection<Room> _rooms;
         private readonly CloudService _cloudService;
         private readonly HttpClient _httpClient;
+        private const string DefaultAvatarFileName = "https://res.cloudinary.com/dpr5nrste/image/upload/v1744902717/ApartmentManagement/Avatar/AvatarDefualt.png";
 
         public AdminController(IMongoDBService mongoDBService, CloudService cloudService, HttpClient httpClient)
         {
@@ -54,6 +55,28 @@ namespace ApartmentManagement.Controllers
             await _users.ReplaceOneAsync(u => u.Id == user.Id, user);
 
             return Ok();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAccount(string id)
+        {
+            var user = await _users.Find(u => u.Id == id).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                return NotFound();
+            }
+            if (!user.Avatar.Contains(DefaultAvatarFileName))
+            {
+                var deleteOldAvatar = await _cloudService.DeleteAvatar(user.Avatar);
+                if (deleteOldAvatar == false)
+                {
+                    TempData["ErrorMessage"] = "Xóa ảnh thất bại.";
+                    return RedirectToAction("Account");
+                }
+            }
+            await _users.DeleteOneAsync(u => u.Id == id);
+            return RedirectToAction("Account");
         }
 
         [HttpGet]

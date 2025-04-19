@@ -32,54 +32,55 @@
                 THỐNG KÊ TÀI KHOẢN KHÁCH HÀNG
             </div>
             <div class="card-body">
-                <form asp-controller="Admin" asp-action="Account" method="post">
-                    @Html.AntiForgeryToken()
+                @Html.AntiForgeryToken()
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle text-center">
-                            <thead class="table-light">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Họ tên</th>
+                                <th>Email</th>
+                                <th>Trạng thái</th>
+                                <th>Vai trò</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model)
+                            {
                                 <tr>
-                                    <th>Họ tên</th>
-                                    <th>Email</th>
-                                    <th>Trạng thái</th>
-                                    <th>Vai trò</th>
-                                    <th>Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var user in Model)
-                                {
-                                    <tr>
-                                        <td>@user.FullName</td>
-                                        <td>@user.Email</td>
-                                        <td>
-                                            @if (user.Status)
-                                            {
-                                                <span class="badge bg-success">Đã có hợp đồng</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-secondary">Chưa có hợp đồng</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <select class="form-select form-select-sm w-auto mx-auto"
-                                                    onchange="updateRole('@user.Id', this)">
-                                                <option value="Tenant" selected="@(user.Role == "Tenant")">Khách hàng</option>
-                                                <option value="Admin" selected="@(user.Role == "Admin")">Admin</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc muốn xóa?')">
+                                    <td>@user.FullName</td>
+                                    <td>@user.Email</td>
+                                    <td>
+                                        @if (user.Status)
+                                        {
+                                            <span class="badge bg-success">Đã có hợp đồng</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Chưa có hợp đồng</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm w-auto mx-auto"
+                                                onchange="updateRole('@user.Id', this)">
+                                            <option value="Tenant" selected="@(user.Role == "Tenant")">Khách hàng</option>
+                                            <option value="Admin" selected="@(user.Role == "Admin")">Admin</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <form asp-action="DeleteAccount" asp-route-id="@user.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-danger">
                                                 <i class="bi bi-trash"></i> Xóa
-                                            </a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </form>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
