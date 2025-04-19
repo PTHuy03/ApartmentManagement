@@ -30,7 +30,7 @@ namespace ApartmentManagement
 
 
             builder.Services.AddAuthorization();
-
+            builder.Services.AddHttpClient(); 
 
             var app = builder.Build();
 

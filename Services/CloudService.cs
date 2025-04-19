@@ -34,6 +34,30 @@ namespace ApartmentManagement.Services
             return uploadResult.SecureUrl.ToString();
         }
 
+        public async Task<List<string>> UploadRoomImgs(IFormFile[] files, string roomName)
+        {
+            var uploadedUrls = new List<string>();
+            foreach(var file in files)
+            {
+                await using var stream = file.OpenReadStream();
+                var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+                var uploadParams = new ImageUploadParams
+                {
+                    File = new FileDescription(fileName, stream),
+                    Folder = $"ApartmentManagement/Room/{roomName}"
+                };
+
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+                if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    uploadedUrls.Add(uploadResult.SecureUrl.ToString());
+                }
+            }
+
+            return uploadedUrls;
+        }
+
         public async Task<bool> DeleteAvatar(string imageUrl)
         {
             if (string.IsNullOrEmpty(imageUrl))
