@@ -94,5 +94,87 @@ namespace ApartmentManagement.Controllers
 
             return RedirectToAction("Room");
         }
+
+        [HttpGet]
+        public IActionResult DetailRoom(string id)
+        {
+            var room = _rooms.Find(u => u.Id == id).FirstOrDefault();
+            return View(room);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateRoom(Room room, IFormFile[] images)
+        {
+            var existingRoom = await _rooms.Find(r => r.Id == room.Id).FirstOrDefaultAsync();
+            if (existingRoom == null)
+            {
+                return NotFound();
+            }
+
+            // Cập nhật tên tỉnh/quận nếu có thay đổi mã
+            if (existingRoom.Province != room.Province || existingRoom.District != room.District)
+            {
+                var provinceResponse = await _httpClient.GetAsync($"https://provinces.open-api.vn/api/p/{room.Province}");
+                var provinceName = JsonSerializer.Deserialize<JsonElement>(await provinceResponse.Content.ReadAsStringAsync())
+                                                    .GetProperty("name").GetString();
+
+                var districtResponse = await _httpClient.GetAsync($"https://provinces.open-api.vn/api/d/{room.District}");
+                var districtName = JsonSerializer.Deserialize<JsonElement>(await districtResponse.Content.ReadAsStringAsync())
+                                                    .GetProperty("name").GetString();
+
+                room.Province = provinceName;
+                room.District = districtName;
+            }
+
+            // Xử lý ảnh nếu có upload mới
+            if (images != null && images.Length > 0)
+            {
+                foreach (var image in existingRoom.ImageUrls ?? new List<string>())
+                {
+                    var deleted = await _cloudService.DeleteRoomImg(image, existingRoom.RoomName);
+                    if (!deleted)
+                    {
+                        TempData["ErrorMessage"] = "Tải ảnh thất bại.";
+                        return RedirectToAction("DetailRoom", new { id = room.Id });
+                    }
+                }
+
+                var newUrls = await _cloudService.UploadRoomImgs(images, room.RoomName);
+                room.ImageUrls = newUrls;
+            }
+            else
+            {
+                room.ImageUrls = existingRoom.ImageUrls;
+            }
+
+            room.CreatedAt = existingRoom.CreatedAt;
+            room.Status = existingRoom.Status;
+
+            await _rooms.ReplaceOneAsync(r => r.Id == room.Id, room);
+            return RedirectToAction("DetailRoom", new { id = room.Id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteRoom(string id)
+        {
+            var room = await _rooms.Find(r => r.Id == id).FirstOrDefaultAsync();
+            if (room == null)
+            {
+                return NotFound();
+            }
+            foreach (var image in room.ImageUrls ?? new List<string>())
+            {
+                var deleted = await _cloudService.DeleteRoomImg(image, room.RoomName);
+                if (!deleted)
+                {
+                    TempData["ErrorMessage"] = "Xóa ảnh thất bại.";
+                    return RedirectToAction("DetailRoom", new { id = room.Id });
+                }
+            }
+            await _rooms.DeleteOneAsync(r => r.Id == id);
+            return RedirectToAction("Room");
+        }
     }
 }

@@ -83,5 +83,31 @@ namespace ApartmentManagement.Services
                 return false;
             }
         }
+
+        public async Task<bool> DeleteRoomImg(string imageUrl, string roomName)
+        {
+            if (string.IsNullOrEmpty(imageUrl))
+            {
+                return false; // Không xóa ảnh mặc định
+            }
+
+            try
+            {
+                var uri = new Uri(imageUrl);
+                var publicIdWithExtension = Path.GetFileNameWithoutExtension(uri.LocalPath); // Ví dụ: ApartmentManagement/Avatar/abc_xyz
+                var folderPath = $"ApartmentManagement/Room/{roomName}";
+                var publicId = imageUrl.Contains(folderPath)
+                    ? imageUrl.Substring(imageUrl.IndexOf(folderPath)).Replace(".jpg", "").Replace(".png", "")
+                    : publicIdWithExtension;
+
+                var deletionParams = new DeletionParams(publicId);
+                var result = await _cloudinary.DestroyAsync(deletionParams);
+                return result.Result == "ok";
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }
