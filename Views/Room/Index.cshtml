@@ -1,22 +1,75 @@
-﻿@model List<ApartmentManagement.Models.Room>
+﻿@model IEnumerable<ApartmentManagement.Models.Room>
 
-<h2>Danh sách phòng đang trống</h2>
-<table>
-    <tr>
-        <td>Tên phòng</td>
-        <td>Địa chỉ</td>
-        <td>Diện tích</td>
-        <td>Loại phòng</td>
-        <td>Giá</td>
-    </tr>
-    @foreach (var room in Model)
-    {
-        <tr>
-            <td>@room.RoomName</td>
-            <td>@room.District</td>
-            <td>@room.Area m²</td>
-            <td>@room.RoomMember</td>
-            <td>@room.Price VND</td>
-        </tr>
-    }
-</table>
+<!-- Giới thiệu -->
+<div class="text-center mb-5">
+    <h1 class="display-5 fw-bold">Hệ thống quản lý nhà trọ</h1>
+    <p class="lead">Tìm và quản lý phòng trọ nhanh chóng, tiện lợi.</p>
+</div>
+<div class="container">
+    <!-- Thanh lọc & tìm kiếm -->
+    <form class="row g-3 align-items-end mb-4">
+        <!-- Thanh tìm kiếm -->
+        <div class="mb-4">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <input type="text" name="search" class="form-control w-50" style="min-width: 200px;" placeholder="Tìm tên phòng..." />
+
+                <select class="form-select w-auto">
+                    <option value="">Số lượng người</option>
+                    @foreach (var member in Model.Select(r => r.RoomMember).Distinct())
+                    {
+                        <option value="@member">@member người</option>
+                    }
+                </select>
+
+                <select class="form-select w-auto">
+                    <option value="">Quận</option>
+                    @foreach (var district in Model.Select(r => r.District).Distinct())
+                    {
+                        <option value="@district">@district</option>
+                    }
+                </select>
+
+                <select class="form-select w-auto">
+                    <option value="">Giá</option>
+                    <option value="0-1000000">Dưới 1 triệu</option>
+                    <option value="1000000-3000000">1 - 3 triệu</option>
+                    <option value="3000000-999999999">Trên 3 triệu</option>
+                </select>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Tìm kiếm
+                </button>
+            </div>
+
+        </div>
+
+    </form>
+
+    <!-- Danh sách phòng -->
+    <div class="row row-cols-1 row-cols-md-4 g-4 mb-3">
+        @foreach (var room in Model.Take(6)) // hiển thị 6 phòng đầu
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <img src="@(room.ImageUrls?.FirstOrDefault() ?? "/img/default-room.jpg")" class="card-img-top" style="height: 180px; object-fit: cover;" />
+                    <div class="card-body">
+                        <h5 class="card-title">@room.RoomName</h5>
+                        <p class="card-text text-muted mb-1">
+                            <i class="bi bi-people-fill me-1"></i> @room.RoomMember người |
+                            <i class="bi bi-rulers me-1"></i> @room.Area m²
+                        </p>
+                        <p class="card-text text-muted">
+                            <i class="bi bi-geo-alt-fill me-1"></i>
+                            @room.StreetAddress, @room.Ward, @room.District
+                        </p>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-danger">@room.Price.ToString("N0") VNĐ</span>
+                        <a href="#" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+</div>
