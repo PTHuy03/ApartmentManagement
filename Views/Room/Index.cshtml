@@ -1,75 +1,150 @@
-﻿@model IEnumerable<ApartmentManagement.Models.Room>
+﻿@model IEnumerable<ApartmentManagement.Models.Apartment>
 
-<!-- Giới thiệu -->
-<div class="text-center mb-5">
-    <h1 class="display-5 fw-bold">Hệ thống quản lý nhà trọ</h1>
-    <p class="lead">Tìm và quản lý phòng trọ nhanh chóng, tiện lợi.</p>
-</div>
-<div class="container">
-    <!-- Thanh lọc & tìm kiếm -->
-    <form class="row g-3 align-items-end mb-4">
-        <!-- Thanh tìm kiếm -->
-        <div class="mb-4">
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <input type="text" name="search" class="form-control w-50" style="min-width: 200px;" placeholder="Tìm tên phòng..." />
+<div  style="margin-left: 20%; margin-right: 20%;">
+    <form class="row g-3 align-items-end mb-4" method="get" asp-action="Index" asp-controller="Room">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <select id="memberFilter" class="form-select w-auto">
+                <option value="">Number of people</option>
+                @foreach (var member in Model.SelectMany(a => a.Rooms).Select(r => r.RoomMember).Distinct())
+                {
+                    <option value="@member">@member people</option>
+                }
+            </select>
 
-                <select class="form-select w-auto">
-                    <option value="">Số lượng người</option>
-                    @foreach (var member in Model.Select(r => r.RoomMember).Distinct())
-                    {
-                        <option value="@member">@member người</option>
-                    }
-                </select>
+            <select id="districtFilter" class="form-select w-auto">
+                <option value="">District</option>
+                @foreach (var district in Model.Select(a => a.District).Distinct())
+                {
+                    <option value="@district">@district</option>
+                }
+            </select>
 
-                <select class="form-select w-auto">
-                    <option value="">Quận</option>
-                    @foreach (var district in Model.Select(r => r.District).Distinct())
-                    {
-                        <option value="@district">@district</option>
-                    }
-                </select>
+            <select id="areaFilter" class="form-select w-auto">
+                <option value="">Area (m²)</option>
+                @foreach (var area in Model.SelectMany(a => a.Rooms).Select(r => r.Area).Distinct().OrderBy(a => a))
+                {
+                    <option value="@area">@area</option>
+                }
+            </select>
 
-                <select class="form-select w-auto">
-                    <option value="">Giá</option>
-                    <option value="0-1000000">Dưới 1 triệu</option>
-                    <option value="1000000-3000000">1 - 3 triệu</option>
-                    <option value="3000000-999999999">Trên 3 triệu</option>
-                </select>
-
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-search"></i> Tìm kiếm
-                </button>
-            </div>
-
+            <select id="priceFilter" class="form-select w-auto">
+                <option value="">Price range (VND)</option>
+                <option value="0-2000000">Under 2,000,000</option>
+                <option value="2000000-5000000">2,000,000 - 5,000,000</option>
+                <option value="5000000-10000000">5,000,000 - 10,000,000</option>
+                <option value="10000000-">Above 10,000,000</option>
+            </select>
         </div>
-
     </form>
 
-    <!-- Danh sách phòng -->
-    <div class="row row-cols-1 row-cols-md-4 g-4 mb-3">
-        @foreach (var room in Model.Take(6)) // hiển thị 6 phòng đầu
-        {
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <img src="@(room.ImageUrls?.FirstOrDefault() ?? "/img/default-room.jpg")" class="card-img-top" style="height: 180px; object-fit: cover;" />
-                    <div class="card-body">
-                        <h5 class="card-title">@room.RoomName</h5>
-                        <p class="card-text text-muted mb-1">
-                            <i class="bi bi-people-fill me-1"></i> @room.RoomMember người |
-                            <i class="bi bi-rulers me-1"></i> @room.Area m²
-                        </p>
-                        <p class="card-text text-muted">
-                            <i class="bi bi-geo-alt-fill me-1"></i>
-                            @room.StreetAddress, @room.Ward, @room.District
-                        </p>
-                    </div>
-                    <div class="card-footer d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-danger">@room.Price.ToString("N0") VNĐ</span>
-                        <a href="#" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
 
+    <!-- Apartment and Room List -->
+    @foreach (var apartment in Model.Where(a => a.Rooms != null && a.Rooms.Any()))
+    {
+        <div class="mb-4 apartment-block" data-apartment-id="@apartment.Id">
+            <h4 class="mb-3 text-primary">
+                <i class="bi bi-house-door-fill"></i> @apartment.ApartmentName - @apartment.StreetAddress, @apartment.Ward, @apartment.District
+            </h4>
+
+            @foreach (var room in apartment.Rooms)
+            {
+                <a asp-action="RoomDetail" asp-controller="Room" asp-route-id="@room.Id"
+                   class="text-decoration-none text-dark">
+                    <div class="room-row border rounded-3 p-3 mb-3 shadow-sm d-flex align-items-start room-card"
+                         data-member="@room.RoomMember"
+                         data-district="@apartment.District.ToLower()"
+                         data-apartment-id="@apartment.Id"
+                         data-area="@room.Area"
+                         data-price="@room.Price"
+                         style="cursor: pointer;">
+
+                        <!-- Ảnh bên trái -->
+                        <div class="me-3 position-relative" style="flex: 0 0 200px;">
+                            <img src="@(room.ImageUrls?.FirstOrDefault() ?? "/img/default-room.jpg")"
+                                 class="rounded-3"
+                                 style="width: 200px; height: 150px; object-fit: cover;" />
+                            <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2">Tin ưu tiên</span>
+                        </div>
+
+                        <!-- Nội dung bên phải -->
+                        <div class="flex-grow-1 d-flex flex-column justify-content-between">
+                            <div>
+                                <h5 class="fw-bold mb-1">@room.RoomName</h5>
+                                <p class="text-muted mb-1">Nội thất đầy đủ</p>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fw-bold text-danger fs-5">
+                                        @string.Format("{0:N1} triệu/tháng", room.Price / 1000000)
+                                    </span>
+                                    <span class="text-secondary">@room.Area m²</span>
+                                </div>
+                                <p class="text-muted mt-1">
+                                    <i class="bi bi-geo-alt"></i> @apartment.District
+                                </p>
+                            </div>
+                            <div class="text-muted small mt-2">
+                                <i class="bi bi-person-circle"></i> Hoàng Tuấn Minh • 1 tin đăng
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+    }
 </div>
+<script>
+    const memberFilter = document.getElementById('memberFilter');
+    const districtFilter = document.getElementById('districtFilter');
+    const areaFilter = document.getElementById('areaFilter');
+    const priceFilter = document.getElementById('priceFilter');
+
+    const rows = document.querySelectorAll('.room-row');
+    const apartments = document.querySelectorAll('.apartment-block');
+
+    function filterRooms() {
+        const memberValue = memberFilter.value;
+        const districtValue = districtFilter.value.toLowerCase();
+        const areaValue = areaFilter.value;
+        const priceValue = priceFilter.value;
+
+        let minPrice = null, maxPrice = null;
+        if (priceValue) {
+            const parts = priceValue.split('-');
+            minPrice = parseFloat(parts[0]) || 0;
+            maxPrice = parts[1] ? parseFloat(parts[1]) : null;
+        }
+
+        rows.forEach(row => {
+            const member = row.dataset.member;
+            const district = row.dataset.district.toLowerCase();
+            const area = parseFloat(row.dataset.area);
+            const price = parseFloat(row.dataset.price);
+
+            const matchMember = !memberValue || member === memberValue;
+            const matchDistrict = !districtValue || district === districtValue;
+            const matchArea = !areaValue || area == areaValue;
+            const matchPrice =
+                !priceValue ||
+                (price >= minPrice && (maxPrice === null || price <= maxPrice));
+
+            if (matchMember && matchDistrict && matchArea && matchPrice) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        // Ẩn apartment nếu không còn phòng nào hiển thị
+        apartments.forEach(apartment => {
+            const apartmentId = apartment.dataset.apartmentId;
+            const roomsInApartment = document.querySelectorAll(`.room-row[data-apartment-id="${apartmentId}"]`);
+            const hasVisibleRoom = Array.from(roomsInApartment).some(r => r.style.display !== "none");
+
+            apartment.style.display = hasVisibleRoom ? "" : "none";
+        });
+    }
+
+    [memberFilter, districtFilter, areaFilter, priceFilter].forEach(filter => {
+        filter.addEventListener('change', filterRooms);
+    });
+</script>
+

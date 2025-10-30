@@ -1,0 +1,180 @@
+﻿@model List<Room>
+@{
+    var apartment = ViewBag.Apartment;
+}
+
+<div class="row m-4">
+    <!-- Sidebar -->
+    <div class="col-md-3 mb-3">
+        @Html.Partial("_Sidebar")
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                <a asp-action="Apartment" class="btn btn-outline-secondary btn-sm">← Back to list</a>
+                <span>ROOM DETAILS @apartment.ApartmentName</span>
+                <a href="@Url.Action("CreateRoom", "Admin", new { apartmentId = apartment.Id })" class="btn btn-primary btn-sm">+ Add Room</a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Left: Room list -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Room List</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var room in Model)
+                            {
+                                var btnClass = room.Status switch
+                                {
+                                    "Trống" => "btn-success",
+                                    "Chờ duyệt" => "btn-warning text-dark",
+                                    "Đang thuê" => "btn-danger",
+                                    _ => "btn-secondary"
+                                };
+
+                                <a href="@Url.Action("DetailRoom", "Admin", new { id = room.Id })" class="btn @btnClass btn-sm">
+                                    @room.RoomName
+                                </a>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Right: Edit info -->
+                    <div class="col-md-8">
+                        <form asp-action="EditApartment" method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="Id" value="@apartment.Id" />
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Apartment Name</label>
+                                    <input type="text" name="Name" value="@apartment.ApartmentName" class="form-control" required />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Street Address</label>
+                                    <input type="text" name="StreetAddress" value="@apartment.StreetAddress" class="form-control" required />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Province / City</label>
+                                    <select id="province" name="Province" class="form-select" data-selected="@apartment.Province" required></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">District</label>
+                                    <select id="district" name="District" class="form-select" data-selected="@apartment.District" required></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Ward</label>
+                                    <select id="ward" name="Ward" class="form-select" data-selected="@apartment.Ward" required></select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary mt-3">Update</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Delete Form -->
+                <form asp-action="DeleteApartment" asp-route-id="@apartment.Id"
+                      method="post" class="mt-2" onsubmit="return confirm('Are you sure you want to delete this apartment?')">
+                    <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center">
+                        <i class="bi bi-trash me-1"></i> Delete Apartment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", async function () {
+        const provinceSelect = document.getElementById("province");
+        const districtSelect = document.getElementById("district");
+        const wardSelect = document.getElementById("ward");
+
+        const selectedProvince = provinceSelect.getAttribute("data-selected");
+        const selectedDistrict = districtSelect.getAttribute("data-selected");
+        const selectedWard = wardSelect.getAttribute("data-selected");
+
+        const provinces = await fetch("https://provinces.open-api.vn/api/p/").then(res => res.json());
+        const allowedProvinces = [
+            "Thành phố Hồ Chí Minh",
+            "Tỉnh Bình Dương",
+            "Tỉnh Bà Rịa - Vũng Tàu",
+            "Tỉnh Đồng Nai"
+        ];
+
+        provinces.filter(p => allowedProvinces.includes(p.name))
+            .forEach(p => {
+                const selected = (p.name === selectedProvince) ? "selected" : "";
+                provinceSelect.innerHTML += `<option value="${p.code}" ${selected}>${p.name}</option>`;
+            });
+
+        if (selectedProvince) {
+            const provinceCode = provinceSelect.value;
+            const provinceData = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`).then(res => res.json());
+            districtSelect.innerHTML = "<option value=''>--Select District--</option>";
+            provinceData.districts.forEach(d => {
+                const selected = (d.name === selectedDistrict) ? "selected" : "";
+                districtSelect.innerHTML += `<option value="${d.code}" ${selected}>${d.name}</option>`;
+            });
+
+            if (selectedDistrict) {
+                const districtCode = districtSelect.value;
+                const districtData = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`).then(res => res.json());
+                wardSelect.innerHTML = "<option value=''>--Select Ward--</option>";
+                districtData.wards.forEach(w => {
+                    const selected = (w.name === selectedWard) ? "selected" : "";
+                    wardSelect.innerHTML += `<option value="${w.name}" ${selected}>${w.name}</option>`;
+                });
+            }
+        }
+    });
+
+    document.getElementById("province").addEventListener("change", function () {
+        const provinceCode = this.value;
+        fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
+            .then(res => res.json())
+            .then(data => {
+                const districtSelect = document.getElementById("district");
+                districtSelect.innerHTML = "<option value=''>--Select District--</option>";
+                data.districts.forEach(d => {
+                    districtSelect.innerHTML += `<option value="${d.code}">${d.name}</option>`;
+                });
+                document.getElementById("ward").innerHTML = "<option value=''>--Select Ward--</option>";
+            });
+    });
+
+    document.getElementById("district").addEventListener("change", function () {
+        const districtCode = this.value;
+        fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+            .then(res => res.json())
+            .then(data => {
+                const wardSelect = document.getElementById("ward");
+                wardSelect.innerHTML = "<option value=''>--Select Ward--</option>";
+                data.wards.forEach(w => {
+                    wardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
+                });
+            });
+    });
+
+    function previewImages(event) {
+        const imagePreview = document.getElementById('imagePreview');
+        imagePreview.innerHTML = '';
+
+        const files = event.target.files;
+        for (let file of files) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'img-thumbnail';
+                img.style.width = '100px';
+                img.style.height = '100px';
+                imagePreview.appendChild(img);
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+</script>

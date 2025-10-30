@@ -1,102 +1,101 @@
 ﻿using ApartmentManagement.Models;
+using ApartmentManagement.Repositories.Interfaces;
 using ApartmentManagement.Services;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Driver;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ApartmentManagement.Controllers
 {
     public class AccountController : Controller
     {
+        private readonly IAccountRepository _accountRepository;
+        private readonly Jwt _jwt;
 
-        private readonly IMongoCollection<User> _users;
-        private readonly CloudService _cloudService;
-        private readonly EmailSender _emailSender;
-        private const string DefaultAvatarFileName = "https://res.cloudinary.com/dpr5nrste/image/upload/v1744902717/ApartmentManagement/Avatar/AvatarDefualt.png";
-
-        public AccountController(IMongoDBService mongoDBService, CloudService cloudService, EmailSender emailSender)
+        public AccountController(IAccountRepository accountRepository, Jwt jwt)
         {
-            _users = mongoDBService.GetCollection<User>("Users");
-            _cloudService = cloudService;
-            _emailSender = emailSender;
+            _accountRepository = accountRepository;
+            _jwt = jwt;
         }
 
-        private ClaimsPrincipal CreatePrincipal(User user, string authScheme = "MyCookieAuth")
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Sid, user.Id),
-                new Claim(ClaimTypes.Role, user.Role),
-                new Claim(ClaimTypes.UserData, user.Avatar)
-            };
-            var identity = new ClaimsIdentity(claims, authScheme);
-            return new ClaimsPrincipal(identity);
-        }
-
-        [HttpGet]
         public IActionResult Register() => View();
+
         [HttpPost]
-        public IActionResult Register(User user, string confirmPass)
+        public async Task<IActionResult> Register(User user, string confirmPass)
         {
-            var existingUser = _users.Find(u => u.Email == user.Email).FirstOrDefault();
-            if(existingUser != null)
+            var (success, message) = await _accountRepository.Register(user, confirmPass);
+            if (!success)
             {
-                ModelState.AddModelError("Email", "Email này đã tồn tại");
-                return View(user);
+                TempData["ErrorMessage"] = message ?? "Registration failed.";
+                return RedirectToAction("Register");
             }
-            if(user.PasswordHash != confirmPass)
-            {
-                ModelState.AddModelError("ConfirmPass", "Mật khẩu xác nhận không khớp");
-            }
-            
-            user.PasswordHash = HashPassword(user.PasswordHash);
-            user.Role = "Tenant";
-            user.Avatar = "https://res.cloudinary.com/dpr5nrste/image/upload/v1744902717/ApartmentManagement/Avatar/AvatarDefualt.png";
-            _users.InsertOne(user);
+
+            TempData["SuccessMessage"] = "Registration successful.";
+
             return RedirectToAction("Login");
         }
 
-        [HttpGet]
         public IActionResult Login() => View();
+
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password, bool rememberMe)
         {
-            var user = _users.Find(u => u.Email == email).FirstOrDefault();
-            if (user == null || user.PasswordHash != HashPassword(password))
+            var user = await _accountRepository.Login(email, password);
+            if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "Sai thông tin đăng nhập");
+                TempData["ErrorMessage"] = "Login failed.";
                 return View();
             }
 
-            var authProperties = new AuthenticationProperties
+            if (user.Status == true)
+            {
+                return RedirectToAction("ForceChangePassword", new { id = user.Id, rememberMe});
+            }
+
+            var authProps = new AuthenticationProperties
             {
                 IsPersistent = rememberMe,
                 ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(3) : DateTimeOffset.UtcNow.AddHours(1)
             };
 
-            var claimsPrincipal = CreatePrincipal(user);
-            await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal, authProperties);
+            var principal = _jwt.CreatePrincipal(user);
+            await HttpContext.SignInAsync("MyCookieAuth", principal, authProps);
+            return RedirectToAction("Index", "Room");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ForceChangePassword(string id, bool rememberMe)
+        {
+            var user = await _accountRepository.GetAccountById(id);
+            ViewBag.RememberMe = rememberMe;
+
+            return View("ForceChangePassword", user);
+        }
+
+        [HttpPost]
+        [ActionName("ForceChangePasswordPost")]
+        public async Task<IActionResult> ForceChangePasswordPost(string id, string newPassword, string confirmPassword, bool rememberMe)
+        {
+            var user = await _accountRepository.GetAccountById(id);
+
+            await _accountRepository.ForceChangePassword(id, newPassword, confirmPassword);
+
+            var authProps = new AuthenticationProperties
+            {
+                IsPersistent = rememberMe,
+                ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(3) : DateTimeOffset.UtcNow.AddHours(1)
+            };
+
+            var principal = _jwt.CreatePrincipal(user);
+            await HttpContext.SignInAsync("MyCookieAuth", principal, authProps);
 
             return RedirectToAction("Index", "Room");
         }
 
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync();
-            return RedirectToAction("Login");
-        }
+            await HttpContext.SignOutAsync("MyCookieAuth");
 
-        private string HashPassword(string password)
-        {
-            using var sha256 = SHA256.Create();
-            var bytes = Encoding.UTF8.GetBytes(password);
-            var hash = sha256.ComputeHash(bytes);
-            return Convert.ToBase64String(hash);
+            return RedirectToAction("Login");
         }
 
         [HttpGet]
@@ -105,173 +104,118 @@ namespace ApartmentManagement.Controllers
         [HttpPost]
         public async Task<IActionResult> ForgetPassword(string email)
         {
-            var user = _users.Find(u => u.Email == email).FirstOrDefault();
-            if (user == null)
+            var success = await _accountRepository.ForgetPassword(email);
+            if (!success)
             {
-                ModelState.AddModelError(string.Empty, "Email không tồn tại");
+                TempData["ErrorMessage"] = "Password reset failed.";
                 return View();
             }
 
-            var newPassword = Guid.NewGuid().ToString("N").Substring(0, 8); // Tạo mật khẩu mới ngẫu nhiên
-            user.PasswordHash = HashPassword(newPassword);
-            _users.ReplaceOne(u => u.Id == user.Id, user);
+            TempData["SuccessMessage"] = "A new password has been sent to your email!";
 
-            // Gửi mật khẩu mới qua email
-            var subject = "Mật khẩu mới của bạn";
-            var body = $@"
-                <p>Chào <strong>{user.FullName}</strong>,</p>
-                <p>Mật khẩu mới của bạn là: <strong>{newPassword}</strong></p>
-                <p>Vui lòng đăng nhập và thay đổi mật khẩu ngay.</p>
-            ";
-
-            await _emailSender.SendEmailAsync(email, subject, body);
             return RedirectToAction("Login");
         }
 
         [HttpGet]
-        public IActionResult Profile(string id)
+        public async Task<IActionResult> Profile(string id)
         {
-            var user = _users.Find(u => u.Id == id).FirstOrDefault();
-            if(user == null) 
+            var user = await _accountRepository.GetProfile(id);
+            if (user == null)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                TempData["ErrorMessage"] = "User not found.";
                 return RedirectToAction("Index", "Room");
             }
-
             return View(user);
         }
 
         [HttpPost]
         public async Task<IActionResult> Profile(string id, string fullName, string phoneNumber, string newEmail)
         {
-            var user = _users.Find(u => u.Id == id).FirstOrDefault();
-            if (user == null)
+            var (updatedUser, emailChanged) = await _accountRepository.UpdateAccount(id, fullName, phoneNumber, newEmail);
+
+            if (updatedUser == null)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                TempData["ErrorMessage"] = "An error occurred.";
                 return RedirectToAction("Index", "Room");
             }
-            user.FullName = fullName;
-            user.PhoneNumber = phoneNumber;
-            if(user.Email != newEmail)
-            {
-                user.Email = newEmail;
-                var currentAuthResult = await HttpContext.AuthenticateAsync("MyCookieAuth");
-                var isPersistent = currentAuthResult.Properties?.IsPersistent ?? false;
-                var expiresUtc = currentAuthResult.Properties?.ExpiresUtc ??
-                    (isPersistent ? DateTimeOffset.UtcNow.AddDays(3) : DateTimeOffset.UtcNow.AddHours(1));
 
-                var authProperties = new AuthenticationProperties
+            if (emailChanged)
+            {
+                var currentAuth = await HttpContext.AuthenticateAsync("MyCookieAuth");
+                var authProps = new AuthenticationProperties
                 {
-                    IsPersistent = isPersistent,
-                    ExpiresUtc = expiresUtc
+                    IsPersistent = currentAuth.Properties?.IsPersistent ?? false,
+                    ExpiresUtc = currentAuth.Properties?.ExpiresUtc ?? DateTimeOffset.UtcNow.AddHours(1)
                 };
 
-                var claimsPrincipal = CreatePrincipal(user);
-                await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal, authProperties);
+                await HttpContext.SignInAsync("MyCookieAuth", _jwt.CreatePrincipal(updatedUser), authProps);
             }
-            _users.ReplaceOne(u => u.Id == user.Id, user);
-            TempData["SuccessMessage"] = "Cập nhật thành công";
-            return RedirectToAction("Profile", "Account", new { email = user.Email });
+
+            TempData["SuccessMessage"] = "Your information has been updated!";
+            return RedirectToAction("Profile", new { id });
         }
 
-        [HttpGet]
-        public IActionResult Avatar(string id)
+        public async Task<IActionResult> Avatar(string id)
         {
-            var user = _users.Find(u => u.Id == id).FirstOrDefault();
+            var user = await _accountRepository.GetProfile(id);
             if (user == null)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                TempData["ErrorMessage"] = "User not found.";
                 return RedirectToAction("Index", "Room");
             }
-
             return View(user);
         }
 
         [HttpPost]
         public async Task<IActionResult> UploadAvatar(string id, IFormFile avatarFile)
         {
-            var user = _users.Find(u => u.Id == id).FirstOrDefault();
-            if (user == null || avatarFile == null || avatarFile.Length == 0)
+            var avatarUrl = await _accountRepository.UploadAvatar(id, avatarFile);
+            if (avatarUrl == null)
             {
-                TempData["ErrorMessage"] = "Tải ảnh thất bại.";
+                TempData["ErrorMessage"] = "Failed to update avatar!";
                 return RedirectToAction("Avatar", new { id });
             }
 
-            try
+            var user = await _accountRepository.GetProfile(id);
+            if (user != null)
             {
-                var avatarUrl = await _cloudService.UploadAvatar(avatarFile);
-                if (!user.Avatar.Contains(DefaultAvatarFileName))
+                var currentAuth = await HttpContext.AuthenticateAsync("MyCookieAuth");
+                var authProps = new AuthenticationProperties
                 {
-                    var deleteOldAvatar = await _cloudService.DeleteAvatar(user.Avatar);
-                    if (deleteOldAvatar == false)
-                    {
-                        TempData["ErrorMessage"] = "Tải ảnh thất bại.";
-                        return RedirectToAction("Avatar", new { id });
-                    }
-                }
-                user.Avatar = avatarUrl;
-
-                var currentAuthResult = await HttpContext.AuthenticateAsync("MyCookieAuth");
-                var isPersistent = currentAuthResult.Properties?.IsPersistent ?? false;
-                var expiresUtc = currentAuthResult.Properties?.ExpiresUtc ??
-                    (isPersistent ? DateTimeOffset.UtcNow.AddDays(3) : DateTimeOffset.UtcNow.AddHours(1));
-
-                var authProperties = new AuthenticationProperties
-                {
-                    IsPersistent = isPersistent,
-                    ExpiresUtc = expiresUtc
+                    IsPersistent = currentAuth.Properties?.IsPersistent ?? false,
+                    ExpiresUtc = currentAuth.Properties?.ExpiresUtc ?? DateTimeOffset.UtcNow.AddHours(1)
                 };
-
-                var claimsPrincipal = CreatePrincipal(user);
-                await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal, authProperties);
-
-                _users.ReplaceOne(u => u.Id == user.Id, user);
-                TempData["SuccessMessage"] = "Cập nhật ảnh đại diện thành công.";
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = "Lỗi khi tải ảnh lên: " + ex.Message;
+                await HttpContext.SignInAsync("MyCookieAuth", _jwt.CreatePrincipal(user), authProps);
             }
 
-            return RedirectToAction("Profile", "Account", new { id });
+            TempData["SuccessMessage"] = "Avatar updated successfully.";
+            return RedirectToAction("Profile", new { id });
         }
 
-        [HttpGet]
-        public IActionResult Password(string id)
+        public async Task<IActionResult> Password(string id)
         {
-            var user = _users.Find(u => u.Id == id).FirstOrDefault();
+            var user = await _accountRepository.GetProfile(id);
             if (user == null)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                TempData["ErrorMessage"] = "User not found.";
                 return RedirectToAction("Index", "Room");
             }
-
             return View(user);
         }
 
         [HttpPost]
-        public IActionResult Password(string id, string oldPassword, string newPassword, string confirmNewPassword)
+        public async Task<IActionResult> Password(string id, string oldPassword, string newPassword, string confirmNewPassword)
         {
-            var user = _users.Find(u => u.Id == id).FirstOrDefault();
-            if (user == null)
+            var success = await _accountRepository.ChangePassword(id, oldPassword, newPassword, confirmNewPassword);
+            if (!success)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
-                return RedirectToAction("Index", "Room");
-            }
-            if (user.PasswordHash != HashPassword(oldPassword))
-            {
-                ModelState.AddModelError("OldPassword", "Mật khẩu cũ không đúng");
+                TempData["ErrorMessage"] = "Failed to update password!";
+                var user = await _accountRepository.GetProfile(id);
                 return View(user);
             }
-            if (newPassword != confirmNewPassword)
-            {
-                ModelState.AddModelError("ConfirmNewPassword", "Mật khẩu xác nhận không khớp");
-                return View(user);
-            }
-            user.PasswordHash = HashPassword(newPassword);
-            _users.ReplaceOne(u => u.Id == user.Id, user);
-            TempData["SuccessMessage"] = "Đổi mật khẩu thành công";
-            return RedirectToAction("Profile", "Account", new { id = user.Id });
+
+            TempData["SuccessMessage"] = "Password changed successfully.";
+            return RedirectToAction("Profile", new { id });
         }
     }
 }

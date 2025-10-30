@@ -2,36 +2,14 @@
 <div class="row m-4">
     <!-- Sidebar -->
     <div class="col-md-3 mb-3">
-        <div class="card">
-            <div class="card-header fw-bold">
-                QUẢN LÝ
-            </div>
-            <div class="card-body list-group ps-3">
-                <a class="list-group-item list-group-item-action" asp-controller="Admin" asp-action="Dashboard">
-                    <i class="bi bi-graph-up me-2"></i>Thống kê
-                </a>
-                <a class="list-group-item list-group-item-action" asp-controller="Admin" asp-action="Account">
-                    <i class="bi bi-people me-2"></i>Tài khoản
-                </a>
-                <a class="list-group-item list-group-item-action active" asp-controller="Admin" asp-action="Room">
-                    <i class="bi bi-house-door-fill me-2"></i>Phòng
-                </a>
-                <a class="list-group-item list-group-item-action" asp-controller="Admin" asp-action="Bill">
-                    <i class="bi bi-receipt me-2"></i>Hóa đơn
-                </a>
-                <a class="list-group-item list-group-item-action" asp-controller="Admin" asp-action="Contract">
-                    <i class="bi bi-file-earmark-text me-2"></i>Hợp đồng
-                </a>
-            </div>
-
-        </div>
+        @Html.Partial("_Sidebar")
     </div>
 
     <div class="col-md-9">
         <div class="card">
             <div class="card-header fw-bold d-flex justify-content-between align-items-center">
-                <span>CHI TIẾT PHÒNG @Model.RoomName</span>
-                <a asp-action="Room" class="btn btn-outline-secondary btn-sm">← Quay về danh sách</a>
+                <span>CHI TIẾT PHÒNG @Model.RoomName</span>
+                <a href="@Url.Action("ApartmentDetail", "Admin", new { id = @Model.ApartmentId })" class="btn btn-outline-secondary btn-sm">← Quay về căn hộ</a>
             </div>
             <div class="card-body">
                 <form asp-action="UpdateRoom" method="post" enctype="multipart/form-data">
@@ -73,130 +51,32 @@
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <select id="province" name="Province" class="form-select" data-selected="@Model.Province" required>
-                                        <option value="">--Chọn Tỉnh/TP--</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <select id="district" name="District" class="form-select" data-selected="@Model.District" required>
-                                        <option value="@Model.District">--Chọn Quận/Huyện--</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <select id="ward" name="Ward" class="form-select" data-selected="@Model.Ward" required>
-                                        <option value="@Model.Ward">--Chọn Phường/Xã--</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Địa chỉ cụ thể</label>
-                                <input type="text" name="StreetAddress" value="@Model.StreetAddress" class="form-control" required />
-                            </div>
-
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Mô tả</label>
                                 <textarea name="Description" class="form-control" rows="3">@Model.Description</textarea>
                             </div>
                             <input type="hidden" name="Id" value="@Model.Id" />
-
+                            <input type="hidden" name="ApartmentId" value="@Model.ApartmentId" />
                             <div class="d-flex justify-content-between gap-2 mt-3">
                                 <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-                                
-
                             </div>
                         </div>
                     </div>
                 </form>
+
                 <!-- Form xoá -->
                 <form asp-action="DeleteRoom" asp-route-id="@Model.Id"
                       method="post" class="mt-2" onsubmit="return confirm('Bạn có chắc muốn xóa?')">
                     <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center">
-                        <i class="bi bi-trash me-1"></i> Xóa phòng
+                        <i class="bi bi-trash me-1"></i> Xóa phòng
                     </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
 <script>
-    document.addEventListener("DOMContentLoaded", async function () {
-        const provinceSelect = document.getElementById("province");
-        const districtSelect = document.getElementById("district");
-        const wardSelect = document.getElementById("ward");
-
-        const selectedProvince = provinceSelect.getAttribute("data-selected");
-        const selectedDistrict = districtSelect.getAttribute("data-selected");
-        const selectedWard = wardSelect.getAttribute("data-selected");
-
-        // 1. Load provinces
-        const provinces = await fetch("https://provinces.open-api.vn/api/p/").then(res => res.json());
-        const allowedProvinces = [
-            "Thành phố Hồ Chí Minh",
-            "Tỉnh Bình Dương",
-            "Tỉnh Bà Rịa - Vũng Tàu",
-            "Tỉnh Đồng Nai"
-        ];
-
-        provinces.filter(p => allowedProvinces.includes(p.name))
-            .forEach(p => {
-                const selected = (p.name === selectedProvince) ? "selected" : "";
-                provinceSelect.innerHTML += `<option value="${p.code}" ${selected}>${p.name}</option>`;
-            });
-
-        if (selectedProvince) {
-            // 2. Load districts của province đã chọn
-            const provinceCode = provinceSelect.value;
-            const provinceData = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`).then(res => res.json());
-            districtSelect.innerHTML = "<option value=''>--Chọn Quận/Huyện--</option>";
-            provinceData.districts.forEach(d => {
-                const selected = (d.name === selectedDistrict) ? "selected" : "";
-                districtSelect.innerHTML += `<option value="${d.code}" ${selected}>${d.name}</option>`;
-            });
-
-            if (selectedDistrict) {
-                // 3. Load wards của district đã chọn
-                const districtCode = districtSelect.value;
-                const districtData = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`).then(res => res.json());
-                wardSelect.innerHTML = "<option value=''>--Chọn Phường/Xã--</option>";
-                districtData.wards.forEach(w => {
-                    const selected = (w.name === selectedWard) ? "selected" : "";
-                    wardSelect.innerHTML += `<option value="${w.name}" ${selected}>${w.name}</option>`;
-                });
-            }
-        }
-    });
-
-    // Tự động cập nhật district khi chọn lại province
-    document.getElementById("province").addEventListener("change", function () {
-        const provinceCode = this.value;
-        fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
-                const districtSelect = document.getElementById("district");
-                districtSelect.innerHTML = "<option value=''>--Chọn Quận/Huyện--</option>";
-                data.districts.forEach(d => {
-                    districtSelect.innerHTML += `<option value="${d.code}">${d.name}</option>`;
-                });
-                document.getElementById("ward").innerHTML = "<option value=''>--Chọn Phường/Xã--</option>";
-            });
-    });
-
-    // Tự động cập nhật ward khi chọn lại district
-    document.getElementById("district").addEventListener("change", function () {
-        const districtCode = this.value;
-        fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
-                const wardSelect = document.getElementById("ward");
-                wardSelect.innerHTML = "<option value=''>--Chọn Phường/Xã--</option>";
-                data.wards.forEach(w => {
-                    wardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
-                });
-            });
-    });
     function previewImages(event) {
         const imagePreview = document.getElementById('imagePreview');
         imagePreview.innerHTML = '';

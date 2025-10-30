@@ -1,0 +1,124 @@
+﻿@model ApartmentManagement.Models.Room
+@{
+    ViewData["Title"] = "Room Detail";
+}
+@{
+    var address = ViewBag.Address;
+    var imageList = Model.ImageUrls?.Skip(1).ToList() ?? new List<string>();
+    var displayCount = 5;
+    var totalImages = imageList.Count;
+    var showCount = Math.Min(displayCount, totalImages);
+    var remaining = totalImages - displayCount;
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12" style="max-width: 80%;">
+            <div class="row">
+                <!-- Left Column: Images (60%) -->
+                <div class="col-lg-8">
+                    @if (Model.ImageUrls != null && Model.ImageUrls.Any())
+                    {
+                        <!-- Main Image -->
+                        <div class="mb-3">
+                            <img src="@Model.ImageUrls.First()" class="img-fluid rounded w-100"
+                                 style="height: 400px; object-fit: cover; cursor: pointer;"
+                                 onclick="showImageInModal('@Model.ImageUrls.First()')" alt="Main image" />
+                        </div>
+
+                        <!-- Thumbnail Images -->
+                        <div class="d-flex gap-2 flex-wrap">
+                            @for (int i = 0; i < showCount; i++)
+                            {
+                                var image = imageList[i];
+                                var isLast = i == displayCount - 1 && remaining > 0;
+                                <div class="position-relative" style="width: 18%;">
+                                    <img src="@image" class="img-fluid rounded" style="height: 100px; object-fit: cover;" />
+
+                                    @if (isLast)
+                                    {
+                                        <div class="overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center rounded" style="background-color: rgba(0, 0, 0, 0.5);">
+                                            <span class="text-white fw-bold">+@remaining photos</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p>No images available.</p>
+                    }
+
+                    <div class="mt-4 p-3 border rounded bg-white">
+                        <h4 class="fw-bold text-uppercase">@Model.RoomName</h4>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="fs-4 text-danger fw-bold me-2">@String.Format("{0:n0} million/month", Model.Price)</span>
+                            <span class="text-muted">· @Model.Area m²</span>
+                        </div>
+
+                        <p class="mb-1">
+                            <i class="bi bi-geo-alt-fill text-primary me-1"></i>
+                            @address
+                        </p>
+                        <p>
+                            <i class="bi bi-clock text-secondary me-1"></i>
+                            Updated @((DateTime.UtcNow - Model.CreatedAt).Days) days ago
+                        </p>
+
+                        <hr />
+
+                        <p class="mb-2"><i class="bi bi-border-all me-2"></i> <strong>Area:</strong> @Model.Area m²</p>
+
+                        <h5 class="mt-4 fw-bold">Detailed Description</h5>
+
+                        <div class="p-2 bg-light rounded d-inline-block mb-3">
+                            <strong>📞 Contact Phone:</strong> 082737 *** <a href="#" class="ms-2 text-primary">Show number</a>
+                        </div>
+                        <p>
+                            @Model.Description
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right Column: Map and Button (40%) -->
+                <div class="mt-4 col-lg-4">
+                    <div class="ratio ratio-4x3 mb-3">
+                        <iframe src="https://www.google.com/maps?q=@address&output=embed"
+                                allowfullscreen loading="lazy"></iframe>
+                    </div>
+
+                    <div class="text-end">
+                        <button class="btn btn-primary">Contact for Rent</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 p-3 border rounded bg-white">
+                <h6 class="fw-bold">Similar Rooms</h6>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal to View Large Image -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0 text-center">
+                <img id="modalImage" src="" class="img-fluid rounded" style="max-height: 90vh;" alt="Preview image">
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showImageInModal(imageUrl) {
+            const modalImage = document.getElementById("modalImage");
+            modalImage.src = imageUrl;
+            const imageModal = new bootstrap.Modal(document.getElementById("imageModal"));
+            imageModal.show();
+        }
+    </script>
+}

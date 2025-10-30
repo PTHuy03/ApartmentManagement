@@ -1,101 +1,58 @@
 ﻿@model List<Room>
+@{
+    var apartmentId = ViewBag.ApartId;
+}
 <div class="row m-4">
     <!-- Sidebar -->
     <div class="col-md-3 mb-3">
-        <div class="card">
-            <div class="card-header fw-bold">
-                QUẢN LÝ
-            </div>
-            <div class="card-body list-group ps-3">
-                <a class="list-group-item list-group-item-action" asp-controller="Admin" asp-action="Dashboard">
-                    <i class="bi bi-graph-up me-2"></i>Thống kê
-                </a>
-                <a class="list-group-item list-group-item-action" asp-controller="Admin" asp-action="Account">
-                    <i class="bi bi-people me-2"></i>Tài khoản
-                </a>
-                <a class="list-group-item list-group-item-action active" asp-controller="Admin" asp-action="Room">
-                    <i class="bi bi-house-door-fill me-2"></i>Phòng
-                </a>
-                <a class="list-group-item list-group-item-action" asp-controller="Admin" asp-action="Bill">
-                    <i class="bi bi-receipt me-2"></i>Hóa đơn
-                </a>
-                <a class="list-group-item list-group-item-action" asp-controller="Admin" asp-action="Contract">
-                    <i class="bi bi-file-earmark-text me-2"></i>Hợp đồng
-                </a>
-            </div>
-
-        </div>
+        @Html.Partial("_Sidebar")
     </div>
 
     <div class="col-md-9">
         <div class="card">
-            <div class="card-header fw-bold">
-                TẠO PHÒNG MỚI
+            <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                <span>CREATE NEW ROOM</span>
+                <a href="@Url.Action("ApartmentDetail", "Admin", new { id = apartmentId })" class="btn btn-outline-secondary btn-sm">← Back to Apartment</a>
             </div>
             <div class="card-body">
                 <form asp-action="CreateRoom" method="post" enctype="multipart/form-data">
                     <div class="row">
-                        <!-- Bên trái: Thêm ảnh -->
+                        <!-- Left: Upload images -->
                         <div class="col-md-4">
-                            <label for="imageUpload" class="form-label fw-bold">Ảnh phòng</label>
+                            <label for="imageUpload" class="form-label fw-bold">Room Images</label>
                             <input type="file" name="images" id="imageUpload" class="form-control mb-3" multiple accept="image/*" onchange="previewImages(event)">
 
                             <div id="imagePreview" class="d-flex flex-wrap gap-2"></div>
                         </div>
 
-                        <!-- Bên phải: Nhập thông tin -->
+                        <!-- Right: Room information -->
                         <div class="col-md-8">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Tên phòng</label>
+                                <label class="form-label fw-bold">Room Name</label>
                                 <input type="text" name="RoomName" class="form-control" required />
                             </div>
 
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label fw-bold">Số người</label>
+                                    <label class="form-label fw-bold">Capacity</label>
                                     <input type="number" name="RoomMember" class="form-control" min="1" required />
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label fw-bold">Diện tích (m²)</label>
+                                    <label class="form-label fw-bold">Area (m²)</label>
                                     <input type="number" name="Area" class="form-control" min="1" required />
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label fw-bold">Giá (VNĐ)</label>
+                                    <label class="form-label fw-bold">Price (VND)</label>
                                     <input type="number" name="Price" class="form-control" min="0" required />
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <select id="province" name="Province" class="form-select" required>
-                                        <option value="">--Chọn Tỉnh/TP--</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <select id="district" name="District" class="form-select" required>
-                                        <option value="">--Chọn Quận/Huyện--</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <select id="ward" name="Ward" class="form-select" required>
-                                        <option value="">--Chọn Phường/Xã--</option>
-                                    </select>
-                                </div>
-                            </div>
-
-
-
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Địa chỉ cụ thể</label>
-                                <input type="text" name="StreetAddress" class="form-control" required />
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Mô tả</label>
+                                <label class="form-label fw-bold">Description</label>
                                 <textarea name="Description" class="form-control" rows="3"></textarea>
                             </div>
-
-                            <button type="submit" class="btn btn-success w-100 mt-3">Tạo phòng</button>
+                            <input type="text" name="ApartmentId" class="form-control" value="@apartmentId" hidden />
+                            <button type="submit" class="btn btn-success w-100 mt-3">Create Room</button>
                         </div>
                     </div>
                 </form>
@@ -103,69 +60,23 @@
         </div>
     </div>
 </div>
+
 <script>
-    // Load Tỉnh/Thành phố khi trang được load
-        document.addEventListener("DOMContentLoaded", function () {
-        fetch("https://provinces.open-api.vn/api/p/")
-            .then(res => res.json())
-            .then(data => {
-                const allowedProvinces = [
-                    "Thành phố Hồ Chí Minh",
-                    "Tỉnh Bình Dương",
-                    "Tỉnh Bà Rịa - Vũng Tàu",
-                    "Tỉnh Đồng Nai"
-                ];
-
-                const provinceSelect = document.getElementById("province");
-                data.filter(p => allowedProvinces.includes(p.name))
-                    .forEach(p => {
-                        provinceSelect.innerHTML += `<option value="${p.code}">${p.name}</option>`;
-                    });
-            });
-    });
-
-
-
-    // Khi chọn Tỉnh → load Quận/Huyện
-        document.getElementById("province").addEventListener("change", function () {
-        const provinceCode = this.value; // Lưu giá trị là name (thay vì code)
-
-        fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
-                const districtSelect = document.getElementById("district");
-                districtSelect.innerHTML = "<option value=''>--Chọn Quận/Huyện--</option>";
-                data.districts.forEach(d => {
-                    districtSelect.innerHTML += `<option value="${d.code}">${d.name}</option>`; // Lưu district name
-                });
-
-                // Reset Ward
-                document.getElementById("ward").innerHTML = "<option value=''>--Chọn Phường/Xã--</option>";
-            });
-    });
-
-
-    // Khi chọn Quận → load Phường/Xã
-    document.getElementById("district").addEventListener("change", function () {
-        const districtCode = this.value;
-
-        fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
-                const wardSelect = document.getElementById("ward");
-                wardSelect.innerHTML = "<option value=''>--Chọn Phường/Xã--</option>";
-                data.wards.forEach(w => {
-                    wardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
-                });
-            });
-    });
-
     function previewImages(event) {
         const imagePreview = document.getElementById('imagePreview');
         imagePreview.innerHTML = '';
 
         const files = event.target.files;
         for (let file of files) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select image files only!');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) { // Limit 5MB
+                alert('Image file too large, please choose under 5MB');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = function (e) {
                 const img = document.createElement('img');

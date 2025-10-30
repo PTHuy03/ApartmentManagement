@@ -1,27 +1,34 @@
 ﻿using ApartmentManagement.Models;
+using ApartmentManagement.Repositories.Interfaces;
 using ApartmentManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using System.Net.Http;
-using System.Text.Json;
-using System.Xml;
 
 namespace ApartmentManagement.Controllers
 {
     [Authorize(AuthenticationSchemes = "MyCookieAuth", Roles = "Admin")]
     public class AdminController : Controller
     {
-        private readonly IMongoCollection<User> _users;
-        private readonly IMongoCollection<Room> _rooms;
+        private readonly IAccountRepository _accountRepository;
+        private readonly IApartmentRepository _apartmentRepository;
+        private readonly IRoomRepository _roomRepository;
         private readonly CloudService _cloudService;
         private readonly HttpClient _httpClient;
+
         private const string DefaultAvatarFileName = "https://res.cloudinary.com/dpr5nrste/image/upload/v1744902717/ApartmentManagement/Avatar/AvatarDefualt.png";
 
-        public AdminController(IMongoDBService mongoDBService, CloudService cloudService, HttpClient httpClient)
+        public AdminController(
+            CloudService cloudService,
+            HttpClient httpClient,
+            IAccountRepository accountRepository,
+            IApartmentRepository apartmentRepository,
+            IRoomRepository roomRepository)
         {
-            _users = mongoDBService.GetCollection<User>("Users");
-            _rooms = mongoDBService.GetCollection<Room>("Rooms");
+            _accountRepository = accountRepository;
+            _apartmentRepository = apartmentRepository;
+            _roomRepository = roomRepository;
             _cloudService = cloudService;
             _httpClient = httpClient;
         }
@@ -32,63 +39,117 @@ namespace ApartmentManagement.Controllers
         }
 
         [HttpGet]
-        public IActionResult Account()
+        public async Task<IActionResult> Account()
         {
-            var user = _users.Find(user => true).ToList();
-            return View(user);
+            var users = await _accountRepository.GetAllAccounts();
+
+            return View(users);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateRole([FromBody] Dictionary<string, string> data)
+        public async Task<IActionResult> UpdateRole([FromBody] dynamic data)
         {
-            if (!data.ContainsKey("id") || !data.ContainsKey("role"))
-                return BadRequest("Thiếu dữ liệu");
+            string id = data.GetProperty("id").GetString();
+            string role = data.GetProperty("role").GetString();
 
-            var id = data["id"];
-            var newRole = data["role"];
+            var success = await _accountRepository.ChangeRole(id, role);
+            if (!success)
+            {
+                return BadRequest("An error occurred.");
+            }
 
-            var user = _users.Find(u => u.Id == id).FirstOrDefault();
-            if (user == null) return NotFound();
-
-            user.Role = newRole;
-            await _users.ReplaceOneAsync(u => u.Id == user.Id, user);
-
-            return Ok();
+            return Ok("Role updated successfully.");
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAccount(string id)
         {
-            var user = await _users.Find(u => u.Id == id).FirstOrDefaultAsync();
-            if (user == null)
+            var success = await _accountRepository.DeleteAccount(id);
+            if (!success)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "An error occurred.";
+                return RedirectToAction("Account");
             }
-            if (!user.Avatar.Contains(DefaultAvatarFileName))
-            {
-                var deleteOldAvatar = await _cloudService.DeleteAvatar(user.Avatar);
-                if (deleteOldAvatar == false)
-                {
-                    TempData["ErrorMessage"] = "Xóa ảnh thất bại.";
-                    return RedirectToAction("Account");
-                }
-            }
-            await _users.DeleteOneAsync(u => u.Id == id);
+
             return RedirectToAction("Account");
         }
 
         [HttpGet]
-        public IActionResult Room()
+        public async Task<IActionResult> Apartment()
         {
-            var rooms = _rooms.Find(room => true).ToList();
-            return View(rooms);
+            var adminId = User.FindFirst("UserId")?.Value;
+            var apartments = await _apartmentRepository.GetApartmentsByAdminId(adminId);
+
+            if (apartments == null)
+            {
+                TempData["ErrorMessage"] = "No apartments found.";
+                return View(apartments);
+            }
+
+            return View(apartments);
         }
 
         [HttpGet]
-        public IActionResult CreateRoom()
+        public IActionResult CreateApartment()
         {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateApartment(Apartment apartment)
+        {
+            var adminId = User.FindFirst("UserId")?.Value;
+            _apartmentRepository.CreateApartment(apartment, adminId);
+
+            return RedirectToAction("Apartment");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ApartmentDetail(string id)
+        {
+            var apartment = await _apartmentRepository.GetApartmentById(id);
+            var rooms = await _roomRepository.GetRoomsByApartmentId(id);
+
+            ViewBag.Apartment = apartment;
+
+            return View(rooms);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditApartment(Apartment apartment)
+        {
+            var result = await _apartmentRepository.UpdateApartment(apartment);
+            if (!result)
+            {
+                TempData["ErrorMessage"] = "Failed to update apartment.";
+                return RedirectToAction("ApartmentDetail", new { id = apartment.Id });
+            }
+
+            return RedirectToAction("ApartmentDetail", new { id = apartment.Id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteApartment(string id)
+        {
+            var result = await _apartmentRepository.DeleteApartment(id);
+            if (!result)
+            {
+                TempData["ErrorMessage"] = "Failed to delete apartment.";
+                return RedirectToAction("ApartmentDetail", new { id });
+            }
+
+            return RedirectToAction("Apartment");
+        }
+
+        [HttpGet]
+        public IActionResult CreateRoom(string apartmentId)
+        {
+            ViewBag.ApartId = apartmentId;
             return View();
         }
 
@@ -96,32 +157,20 @@ namespace ApartmentManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateRoom(Room room, IFormFile[] images)
         {
-            // Gọi API để lấy tên tỉnh từ provinceCode
-            var provinceResponse = await _httpClient.GetAsync($"https://provinces.open-api.vn/api/p/{room.Province}");
-            var provinceData = JsonSerializer.Deserialize<JsonElement>(await provinceResponse.Content.ReadAsStringAsync());
-            var provinceName = provinceData.GetProperty("name").GetString();
+            var result = await _roomRepository.CreateRoom(room, images);
+            if (!result)
+            {
+                TempData["ErrorMessage"] = "Failed to create room.";
+                return RedirectToAction("ApartmentDetail", new { id = room.ApartmentId });
+            }
 
-            // Gọi API để lấy tên quận từ districtCode
-            var districtResponse = await _httpClient.GetAsync($"https://provinces.open-api.vn/api/d/{room.District}");
-            var districtData = JsonSerializer.Deserialize<JsonElement>(await districtResponse.Content.ReadAsStringAsync());
-            var districtName = districtData.GetProperty("name").GetString();
-
-            var imageUrls = await _cloudService.UploadRoomImgs(images, room.RoomName);
-            room.ImageUrls = imageUrls;
-            room.Status = "Trống";
-
-            room.Province = provinceName;
-            room.District = districtName;
-
-            await _rooms.InsertOneAsync(room);
-
-            return RedirectToAction("Room");
+            return RedirectToAction("ApartmentDetail", new { id = room.ApartmentId });
         }
 
         [HttpGet]
-        public IActionResult DetailRoom(string id)
+        public async Task<IActionResult> DetailRoom(string id)
         {
-            var room = _rooms.Find(u => u.Id == id).FirstOrDefault();
+            var room = await _roomRepository.GetRoomById(id);
             return View(room);
         }
 
@@ -129,74 +178,27 @@ namespace ApartmentManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateRoom(Room room, IFormFile[] images)
         {
-            var existingRoom = await _rooms.Find(r => r.Id == room.Id).FirstOrDefaultAsync();
-            if (existingRoom == null)
+            var result = await _roomRepository.UpdateRoom(room, images);
+            if (!result)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "Failed to update room.";
+                return RedirectToAction("DetailRoom", new { id = room.Id });
             }
 
-            // Cập nhật tên tỉnh/quận nếu có thay đổi mã
-            if (existingRoom.Province != room.Province || existingRoom.District != room.District)
-            {
-                var provinceResponse = await _httpClient.GetAsync($"https://provinces.open-api.vn/api/p/{room.Province}");
-                var provinceName = JsonSerializer.Deserialize<JsonElement>(await provinceResponse.Content.ReadAsStringAsync())
-                                                    .GetProperty("name").GetString();
-
-                var districtResponse = await _httpClient.GetAsync($"https://provinces.open-api.vn/api/d/{room.District}");
-                var districtName = JsonSerializer.Deserialize<JsonElement>(await districtResponse.Content.ReadAsStringAsync())
-                                                    .GetProperty("name").GetString();
-
-                room.Province = provinceName;
-                room.District = districtName;
-            }
-
-            // Xử lý ảnh nếu có upload mới
-            if (images != null && images.Length > 0)
-            {
-                foreach (var image in existingRoom.ImageUrls ?? new List<string>())
-                {
-                    var deleted = await _cloudService.DeleteRoomImg(image, existingRoom.RoomName);
-                    if (!deleted)
-                    {
-                        TempData["ErrorMessage"] = "Tải ảnh thất bại.";
-                        return RedirectToAction("DetailRoom", new { id = room.Id });
-                    }
-                }
-
-                var newUrls = await _cloudService.UploadRoomImgs(images, room.RoomName);
-                room.ImageUrls = newUrls;
-            }
-            else
-            {
-                room.ImageUrls = existingRoom.ImageUrls;
-            }
-
-            room.CreatedAt = existingRoom.CreatedAt;
-            room.Status = existingRoom.Status;
-
-            await _rooms.ReplaceOneAsync(r => r.Id == room.Id, room);
-            return RedirectToAction("DetailRoom", new { id = room.Id });
+            return RedirectToAction("ApartmentDetail", new { id = room.ApartmentId });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteRoom(string id)
         {
-            var room = await _rooms.Find(r => r.Id == id).FirstOrDefaultAsync();
-            if (room == null)
+            var result = await _roomRepository.DeleteRoom(id);
+            if (!result)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "Failed to delete room.";
+                return RedirectToAction("DetailRoom", new { id });
             }
-            foreach (var image in room.ImageUrls ?? new List<string>())
-            {
-                var deleted = await _cloudService.DeleteRoomImg(image, room.RoomName);
-                if (!deleted)
-                {
-                    TempData["ErrorMessage"] = "Xóa ảnh thất bại.";
-                    return RedirectToAction("DetailRoom", new { id = room.Id });
-                }
-            }
-            await _rooms.DeleteOneAsync(r => r.Id == id);
+
             return RedirectToAction("Room");
         }
     }

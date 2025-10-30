@@ -1,7 +1,7 @@
 ﻿@model ApartmentManagement.Models.User
 
 <div class="container mt-5" style="max-width: 400px;">
-    <h2 class="text-center mb-4">Đăng nhập</h2>
+    <h2 class="text-center mb-4">Login</h2>
 
     @if (!ViewData.ModelState.IsValid)
     {
@@ -13,29 +13,29 @@
     <form method="post" class="border p-4 rounded shadow-sm bg-light">
         <div class="mb-3">
             <label class="form-label">Email</label>
-            <input name="email" type="email" class="form-control" placeholder="Nhập email của bạn" required />
+            <input name="email" type="email" class="form-control" placeholder="Enter your email" required />
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Mật khẩu</label>
-            <input name="password" type="password" class="form-control" placeholder="Nhập mật khẩu" required />
+            <label class="form-label">Password</label>
+            <input name="password" type="password" class="form-control" placeholder="Enter your password" required />
         </div>
 
         <div class="form-check mb-3">
             <input type="checkbox" name="rememberMe" class="form-check-input" id="rememberMe" />
-            <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
+            <label class="form-check-label" for="rememberMe">Remember me</label>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+        <button type="submit" class="btn btn-primary w-100">Login</button>
     </form>
 
     <div class="text-center mt-3">
-        <span>Bạn quên mật khẩu?</span>
-        <a asp-controller="Account" asp-action="ForgetPassword" class="text-decoration-none">Lấy lại mật khẩu</a>
+        <span>Forgot your password?</span>
+        <a asp-controller="Account" asp-action="ForgetPassword" class="text-decoration-none">Reset it here</a>
     </div>
 
     <div class="text-center mt-2">
-        <span>Bạn chưa có tài khoản?</span>
-        <a asp-controller="Account" asp-action="Register" class="text-decoration-none">Đăng ký ngay</a>
+        <span>Don't have an account?</span>
+        <a asp-controller="Account" asp-action="Register" class="text-decoration-none">Register now</a>
     </div>
 </div>

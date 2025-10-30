@@ -1,0 +1,40 @@
+﻿@model IEnumerable<ApartmentManagement.Models.Apartment>
+<div class="row m-4">
+    <!-- Sidebar -->
+    <div class="col-md-3 mb-3">
+        @Html.Partial("_Sidebar")
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                <span>LIST OF APARTMENTS</span>
+                <!-- Button to create new apartment -->
+                <a asp-action="CreateApartment" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Create New Apartment
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    @foreach (var apartment in Model)
+                    {
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title">@apartment.ApartmentName</h5>
+                                    <p class="card-text text-muted">
+                                        <i class="bi bi-geo-alt-fill me-1"></i> @apartment.StreetAddress, @apartment.Ward, @apartment.District, @apartment.Province
+                                    </p>
+                                </div>
+                                <div class="card-footer d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-info">Created on: @apartment.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                    <a href="@Url.Action("ApartmentDetail", "Admin", new { id = apartment.Id })" class="btn btn-outline-primary btn-sm">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

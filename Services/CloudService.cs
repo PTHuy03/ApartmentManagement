@@ -62,7 +62,7 @@ namespace ApartmentManagement.Services
         {
             if (string.IsNullOrEmpty(imageUrl))
             {
-                return false; // Không xóa ảnh mặc định
+                return false; 
             }
 
             try
@@ -94,7 +94,7 @@ namespace ApartmentManagement.Services
             try
             {
                 var uri = new Uri(imageUrl);
-                var publicIdWithExtension = Path.GetFileNameWithoutExtension(uri.LocalPath); // Ví dụ: ApartmentManagement/Avatar/abc_xyz
+                var publicIdWithExtension = Path.GetFileNameWithoutExtension(uri.LocalPath);
                 var folderPath = $"ApartmentManagement/Room/{roomName}";
                 var publicId = imageUrl.Contains(folderPath)
                     ? imageUrl.Substring(imageUrl.IndexOf(folderPath)).Replace(".jpg", "").Replace(".png", "")

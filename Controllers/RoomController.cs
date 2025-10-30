@@ -1,5 +1,6 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using ApartmentManagement.Models;
+using ApartmentManagement.Repositories.Interfaces;
 using ApartmentManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,23 +10,36 @@ namespace ApartmentManagement.Controllers
 {
     public class RoomController : Controller
     {
-        private readonly IMongoCollection<Room> _rooms;
+        private readonly IApartmentRepository _apartmentRepository;
+        private readonly IRoomRepository _roomRepository;
 
-        public RoomController(IMongoDBService mongoDBService)
+        public RoomController(IApartmentRepository apartmentRepository, IRoomRepository roomRepository)
         {
-            _rooms = mongoDBService.GetCollection<Room>("Rooms");
+            _apartmentRepository = apartmentRepository;
+            _roomRepository = roomRepository;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var rooms = _rooms.Find(room => true).ToList();
-            return View(rooms);
+            var apartments = await _apartmentRepository.GetAllApartments();
+
+            foreach (var apartment in apartments)
+            {
+                apartment.Rooms = await _roomRepository.GetRoomsByApartmentId(apartment.Id);
+            }
+
+            return View(apartments);
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public async Task<IActionResult> RoomDetail(string id)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            var room = await _roomRepository.GetRoomById(id);
+            var apartment = await _apartmentRepository.GetApartmentById(room.ApartmentId);
+            var address = $"{apartment.StreetAddress}, {apartment.Ward}, {apartment.Province}";
+
+            ViewBag.Address = address;
+
+            return View(room);
         }
     }
 }

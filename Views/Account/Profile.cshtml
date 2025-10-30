@@ -1,4 +1,5 @@
 ﻿@model ApartmentManagement.Models.User
+
 <div class="container mt-5">
     <!-- Cover section -->
     <div class="bg-dark text-white text-center py-5 position-relative" style="background-image: url('../img/cover.jpg'); background-size: cover; background-position: center; height: 250px;">
@@ -11,42 +12,41 @@
     <!-- Main section -->
     <div class="row mt-4">
         <!-- Sidebar -->
-        
         <div class="col-md-3 mb-3">
             <div class="card">
                 <div class="card-header fw-bold">
-                    CÀI ĐẶT
+                    SETTINGS
                 </div>
-            <div class="card-body list-group ps-3">
+                <div class="card-body list-group ps-3">
                     <a class="list-group-item list-group-item-action active" asp-controller="Account" asp-action="Profile" asp-route-id="@Model.Id">
-                    <i class="bi bi-person-lines-fill me-2"></i>Hồ sơ
-                </a>
+                        <i class="bi bi-person-lines-fill me-2"></i>Profile
+                    </a>
                     <a class="list-group-item list-group-item-action" asp-controller="Account" asp-action="Avatar" asp-route-id="@Model.Id">
-                    <i class="bi bi-camera-fill me-2"></i>Ảnh đại diện
-                </a>
+                        <i class="bi bi-camera-fill me-2"></i>Avatar
+                    </a>
                     <a class="list-group-item list-group-item-action" asp-controller="Account" asp-action="Password" asp-route-id="@Model.Id">
-                    <i class="bi bi-key-fill me-2"></i>Mật khẩu
-                </a>
+                        <i class="bi bi-key-fill me-2"></i>Password
+                    </a>
+                </div>
             </div>
-        </div>
         </div>
 
         <!-- Profile content -->
         <div class="col-md-9">
             <div class="card">
                 <div class="card-header fw-bold">
-                    CHỈNH SỬA HỒ SƠ CỦA BẠN
+                    EDIT YOUR PROFILE
                 </div>
                 <div class="row items-push">
                     <div class="col-lg-3 m-3">
-                         <p>
-                             Giới thiệu để mọi người hiểu thêm về bạn. Một số thông tin sẽ được hiển thị công khai.
-                         </p>
+                        <p>
+                            Introduce yourself so people can get to know you better. Some information will be publicly displayed.
+                        </p>
                     </div>
                     <div class="card-body col-lg-7 me-5">
                         <form method="post">
                             <div class="mb-3">
-                                <label class="form-label">Tên hiển thị</label>
+                                <label class="form-label">Display Name</label>
                                 <input type="text" class="form-control" value="@Model.FullName" id="fullName" name="fullName">
                             </div>
                             <div class="mb-3">
@@ -54,10 +54,10 @@
                                 <input type="email" class="form-control" value="@Model.Email" id="newEmail" name="newEmail">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Số điện thoại</label>
+                                <label class="form-label">Phone Number</label>
                                 <input type="text" class="form-control" value="@Model.PhoneNumber" id="phoneNumber" name="phoneNumber">
                             </div>
-                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
                         </form>
                     </div>
                 </div>

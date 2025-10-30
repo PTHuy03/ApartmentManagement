@@ -1,3 +1,5 @@
+using ApartmentManagement.Repositories.Interfaces;
+using ApartmentManagement.Repositories;
 using ApartmentManagement.Services;
 
 namespace ApartmentManagement
@@ -11,13 +13,14 @@ namespace ApartmentManagement
             // Add services to the container.
             builder.Services.AddControllersWithViews();
             builder.Services.AddSingleton<IMongoDBService, MongoDBService>();
+            builder.Services.AddScoped<Jwt>();
 
             builder.Services.AddAuthentication("MyCookieAuth")
                 .AddCookie("MyCookieAuth", options =>
                 {
+                    options.Cookie.Name = "MyCookieAuth";
                     options.LoginPath = "/Account/Login";
                     options.AccessDeniedPath = "/Account/AccessDenied";
-
                     options.ExpireTimeSpan = TimeSpan.FromDays(7); 
                     options.SlidingExpiration = true;              
                 });
@@ -25,6 +28,9 @@ namespace ApartmentManagement
             builder.Services.AddScoped<EmailSender>();
 
             builder.Services.AddSingleton<CloudService>();
+            builder.Services.AddScoped<IApartmentRepository, ApartmentRepository>();
+            builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+            builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 
             builder.Services.AddControllersWithViews();
 
