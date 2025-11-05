@@ -34,6 +34,12 @@ namespace ApartmentManagement.Repositories
             return user;
         }
 
+        public async Task<User?> GetAccountByEmail(string email)
+        {
+            var user = await _users.Find(u => u.Email == email).FirstOrDefaultAsync();
+            return user;
+        }
+
         public async Task<(User UpdatedUser, bool EmailChanged)> UpdateAccount(string id, string fullName, string phoneNumber, string newEmail)
         {
             var user = await _users.Find(u => u.Id == id).FirstOrDefaultAsync();
@@ -89,7 +95,10 @@ namespace ApartmentManagement.Repositories
 
             user.PasswordHash = HashPassword(user.PasswordHash);
             user.Role = "Tenant";
-            user.Avatar = DefaultAvatarFileName;
+            if(user.Avatar == null)
+            {
+                user.Avatar = DefaultAvatarFileName;
+            }
             user.Status = false;
 
             await _users.InsertOneAsync(user);

@@ -1,6 +1,9 @@
-using ApartmentManagement.Repositories.Interfaces;
 using ApartmentManagement.Repositories;
+using ApartmentManagement.Repositories.Interfaces;
 using ApartmentManagement.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 
 namespace ApartmentManagement
 {
@@ -15,15 +18,39 @@ namespace ApartmentManagement
             builder.Services.AddSingleton<IMongoDBService, MongoDBService>();
             builder.Services.AddScoped<Jwt>();
 
-            builder.Services.AddAuthentication("MyCookieAuth")
-                .AddCookie("MyCookieAuth", options =>
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = "MyCookieAuth";
+                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+            })
+            .AddCookie("MyCookieAuth", options =>
+            {
+                options.Cookie.Name = "MyCookieAuth";
+                options.LoginPath = "/Account/Login";
+                options.LogoutPath = "/Account/Logout";
+                options.AccessDeniedPath = "/Account/AccessDenied";
+                options.ExpireTimeSpan = TimeSpan.FromDays(7);
+                options.SlidingExpiration = true;
+            })
+            .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+            {
+                options.SignInScheme = "MyCookieAuth";
+                options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+                options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+                options.Scope.Add("profile");
+                options.Scope.Add("email");
+                options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
+
+                options.Events.OnRedirectToAuthorizationEndpoint = context =>
                 {
-                    options.Cookie.Name = "MyCookieAuth";
-                    options.LoginPath = "/Account/Login";
-                    options.AccessDeniedPath = "/Account/AccessDenied";
-                    options.ExpireTimeSpan = TimeSpan.FromDays(7); 
-                    options.SlidingExpiration = true;              
-                });
+                    context.Response.Redirect(context.RedirectUri + "&prompt=select_account");
+                    return Task.CompletedTask;
+                };
+            });
+
+
+
 
             builder.Services.AddScoped<EmailSender>();
 

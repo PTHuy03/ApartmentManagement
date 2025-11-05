@@ -7,6 +7,7 @@ namespace ApartmentManagement.Repositories.Interfaces
     {
         Task<List<User>> GetAllAccounts();
         Task<User?> GetAccountById(string id);
+        Task<User?> GetAccountByEmail(string email);
         Task<(User UpdatedUser, bool EmailChanged)> UpdateAccount(string id, string fullName, string phoneNumber, string newEmail);
         Task<bool> ChangeRole(string id, string newRole);
         Task<bool> DeleteAccount(string id);

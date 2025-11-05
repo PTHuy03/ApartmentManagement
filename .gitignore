@@ -8,10 +8,10 @@
 *.sln.docstates
 
 # Build folders
-bin/
-obj/
-Debug/
-Release/
+/bin/
+/obj/
+/Debug/
+/Release/
 out/
 
 # Visual Studio files

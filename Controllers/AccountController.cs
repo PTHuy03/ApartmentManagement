@@ -2,7 +2,10 @@
 using ApartmentManagement.Repositories.Interfaces;
 using ApartmentManagement.Services;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ApartmentManagement.Controllers
 {
@@ -60,6 +63,49 @@ namespace ApartmentManagement.Controllers
             var principal = _jwt.CreatePrincipal(user);
             await HttpContext.SignInAsync("MyCookieAuth", principal, authProps);
             return RedirectToAction("Index", "Room");
+        }
+
+        [HttpPost]
+        public IActionResult LoginWithGG(string provider, string returnURL = "/")
+        {
+            var redirectUrl = Url.Action("LoginGGCallBack", "Account", new { returnURL });
+            var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+            return Challenge(properties, provider);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> LoginGGCallBack(string returnUrl = "/")
+        {
+            var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+            if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
+            {
+                TempData["ErrorMessage"] = "Google login failed.";
+                return RedirectToAction("Login");
+            }
+
+            var email = authenticateResult.Principal.FindFirstValue(ClaimTypes.Email);
+            var name = authenticateResult.Principal.FindFirstValue(ClaimTypes.Name);
+            var avatar = authenticateResult.Principal.FindFirstValue("urn:google:picture");
+
+            var user = await _accountRepository.GetAccountByEmail(email);
+            var password = Guid.NewGuid().ToString();
+            if(user == null)
+            {
+                user = new User
+                {
+                    Email = email,
+                    FullName = name,
+                    PasswordHash = password,
+                    Avatar = avatar,
+                    Status = false
+                };
+                await _accountRepository.Register(user, password);
+            }
+
+            var principal = _jwt.CreatePrincipal(user);
+            await HttpContext.SignInAsync("MyCookieAuth", principal);
+
+            return Redirect(returnUrl);
         }
 
         [HttpGet]

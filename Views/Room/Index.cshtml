@@ -1,6 +1,6 @@
 ﻿@model IEnumerable<ApartmentManagement.Models.Apartment>
 
-<div  style="margin-left: 20%; margin-right: 20%;">
+<div  style="margin-left: 25%; margin-right: 25%;">
     <form class="row g-3 align-items-end mb-4" method="get" asp-action="Index" asp-controller="Room">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
             <select id="memberFilter" class="form-select w-auto">
@@ -42,10 +42,6 @@
     @foreach (var apartment in Model.Where(a => a.Rooms != null && a.Rooms.Any()))
     {
         <div class="mb-4 apartment-block" data-apartment-id="@apartment.Id">
-            <h4 class="mb-3 text-primary">
-                <i class="bi bi-house-door-fill"></i> @apartment.ApartmentName - @apartment.StreetAddress, @apartment.Ward, @apartment.District
-            </h4>
-
             @foreach (var room in apartment.Rooms)
             {
                 <a asp-action="RoomDetail" asp-controller="Room" asp-route-id="@room.Id"
@@ -63,14 +59,12 @@
                             <img src="@(room.ImageUrls?.FirstOrDefault() ?? "/img/default-room.jpg")"
                                  class="rounded-3"
                                  style="width: 200px; height: 150px; object-fit: cover;" />
-                            <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2">Tin ưu tiên</span>
                         </div>
 
                         <!-- Nội dung bên phải -->
                         <div class="flex-grow-1 d-flex flex-column justify-content-between">
                             <div>
-                                <h5 class="fw-bold mb-1">@room.RoomName</h5>
-                                <p class="text-muted mb-1">Nội thất đầy đủ</p>
+                                <h5 class="fw-bold mb-1">@apartment.ApartmentName</h5>
                                 <div class="d-flex align-items-center gap-3">
                                     <span class="fw-bold text-danger fs-5">
                                         @string.Format("{0:N1} triệu/tháng", room.Price / 1000000)
